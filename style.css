@@ -322,13 +322,13 @@ h1 {
 
 /* Sudoku Styles */
 .sudoku-container {
-  width: calc(var(--board-size) + 6px);
-  height: calc(var(--board-size) + 6px);
+  width: calc(var(--board-size) + 8px); /* 4px * 2 borders */
+  height: calc(var(--board-size) + 8px);
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   gap: 0;
   background: #333;
-  border: 3px solid #333;
+  border: 4px solid #000; /* Thicker container border */
   margin-bottom: 20px;
   box-sizing: content-box;
 }
@@ -346,6 +346,7 @@ h1 {
   /* Default thin borders */
   border-right: 1px solid #333;
   border-bottom: 1px solid #333;
+  box-sizing: border-box; /* Ensure borders are inside the cell dimensions */
 }
 
 .sudoku-cell.fixed {
@@ -367,21 +368,26 @@ h1 {
 /* Borders for 3x3 blocks */
 /* Every 3rd column gets thicker right border */
 .sudoku-cell:nth-child(3n) {
-  border-right: 2px solid #333;
+  border-right: 3px solid #000;
 }
 /* Last column - Remove right border (use container border) */
 .sudoku-cell:nth-child(9n) {
   border-right: none;
 }
 
-/* Rows 3 and 6 get thicker bottom border */
-.sudoku-container div:nth-child(n + 19):nth-child(-n + 27),
-.sudoku-container div:nth-child(n + 46):nth-child(-n + 54) {
-  border-bottom: 2px solid #333;
+/* Rows 3 and 6 get thicker bottom border.
+   Correct Logic: 
+   Row 3 ends at index 27 (19-27 range is correct row 3).
+   Row 6 ends at index 54 (46-54 range is correct row 6).
+   But Grid is flat list of 81 divs.
+*/
+.sudoku-cell:nth-child(n + 19):nth-child(-n + 27),
+.sudoku-cell:nth-child(n + 46):nth-child(-n + 54) {
+  border-bottom: 3px solid #000;
 }
 
-/* Last Row - Remove bottom border (use container border) */
-.sudoku-container div:nth-child(n + 73):nth-child(-n + 81) {
+/* Last Row - Remove bottom border */
+.sudoku-cell:nth-child(n + 73) {
   border-bottom: none;
 }
 
