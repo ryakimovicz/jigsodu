@@ -21,7 +21,8 @@ body {
   color: var(--text-color);
   min-height: 100vh;
   display: flex;
-  justify-content: center;
+  flex-direction: column; /* Stack game and footer vertically */
+  justify-content: flex-start; /* Let margin:auto handle centering */
   align-items: center;
   overflow-y: auto;
   background: var(--bg-gradient);
@@ -54,6 +55,8 @@ body {
   width: 95%;
   max-width: 1000px; /* Increased to fit side pools */
   text-align: center;
+  margin: auto; /* Vertically and horizontally centers in flex container */
+  padding: 20px 0; /* Add padding to prevent touching edges on small screens */
 }
 
 /* ... */
@@ -700,4 +703,13 @@ h1 {
 }
 .fly-away {
   animation: flyAway 0.8s forwards;
+}
+
+footer {
+  width: 100%;
+  padding: 20px 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  flex-shrink: 0; /* Prevent collapsing */
 }
