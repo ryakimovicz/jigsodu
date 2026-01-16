@@ -429,6 +429,33 @@ h1 {
   background: var(--accent-color);
 }
 
+.sudoku-cell.cracked {
+  background-color: #ffeaa7 !important;
+  background-image: linear-gradient(
+      45deg,
+      transparent 48%,
+      #5d4037 49%,
+      #5d4037 51%,
+      transparent 52%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 48%,
+      #5d4037 49%,
+      #5d4037 51%,
+      transparent 52%
+    ) !important;
+  background-size: 100% 100% !important;
+  opacity: 0.9;
+  border-color: #5d4037 !important;
+  pointer-events: none; /* Cannot be clicked again */
+}
+
+/* Ensure cracked cells look distinct even if they were even/odd/highlighted */
+.sudoku-cell.cracked.peak {
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
 /* Number Search Styles */
 .search-wrapper {
   display: flex;
@@ -461,13 +488,19 @@ h1 {
   transition: background 0.1s;
 }
 
-.search-cell.selected {
+.sudoku-cell.search-mode {
+  cursor: crosshair; /* Indicate selection mode */
+  user-select: none;
+}
+
+.sudoku-cell.search-mode.selected {
   background: var(--accent-color);
   color: #2d3436;
 }
 
-.search-cell.found {
-  background: var(--success-color); /* Green */
+/* Ensure found targets are highlighted inside standard layout */
+.sudoku-cell.search-mode.found {
+  background: var(--success-color);
   color: white;
   animation: pulse 0.5s ease;
 }

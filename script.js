@@ -903,6 +903,7 @@ function handlePeakClick() {
   
   if (isTarget) {
     this.classList.add("found");
+    this.classList.add("cracked"); // Add Crack Visual
     gameState.peaksFound++;
     updatePeaksCount();
     
@@ -948,6 +949,8 @@ function transitionToNumberSearch() {
 
 // --- Stage 3: Number Search --- (Stage 5 actually)
 
+// --- Stage 3: Number Search --- (Stage 5 actually)
+
 function generateSearchTargets() {
   const grid = gameState.sudokuSolution;
   const potentialTargets = [];
@@ -958,18 +961,30 @@ function generateSearchTargets() {
     [1, -1]  // Diagonal /
   ];
 
-  // Attempt to find sequences of length 3 to 5
+  // Blocked Set: Peaks & Valleys (Cracked Cells)
+  const blockedSet = new Set();
+  gameState.peaksTargets.forEach(t => blockedSet.add(`${t.r},${t.c}`));
+
+  // Attempt to find sequences of length 3 to 4 (User requested 3-4, reduced max 5)
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
       directions.forEach(([dr, dc]) => {
         let seq = "";
         let path = [];
-        for (let k = 0; k < 5; k++) {
+        // Max length 4 as per request
+        for (let k = 0; k < 4; k++) {
           const nr = r + dr * k;
           const nc = c + dc * k;
+          
           if (nr >= 0 && nr < 9 && nc >= 0 && nc < 9) {
+            // CRITICAL: Check if cell is cracked
+            if (blockedSet.has(`${nr},${nc}`)) {
+               break; // Sequence broken by crack, stop extending
+            }
+
             seq += grid[nr][nc];
             path.push({ r: nr, c: nc });
+            
             if (seq.length >= 3) {
               potentialTargets.push({ sequence: seq, path: [...path] });
             }
@@ -994,6 +1009,9 @@ function generateSearchTargets() {
     }
   }
 
+  // Fallback if not enough targets found (should contain at least some, if not, maybe relax length?)
+  // Given 81 cells and ~20 peaks, 60 cells free, should be fine.
+
   gameState.searchTargets = selected.map((t, idx) => ({ ...t, id: idx, found: false }));
   gameState.foundTargets = [];
 }
@@ -1014,10 +1032,24 @@ function renderSearchBoard() {
   const board = mainBoard;
   board.innerHTML = "";
 
+  // Create blocked set for fast lookup
+  const blockedSet = new Set();
+  if (gameState.peaksTargets) {
+    gameState.peaksTargets.forEach(t => blockedSet.add(`${t.r},${t.c}`));
+  }
+
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
       const cell = document.createElement("div");
-      cell.className = "search-cell";
+      // MANTENEMOS la clase sudoku-cell para que el tablero se vea IDÉNTICO
+      // Agregamos 'search-mode' por si necesitamos overrides especificos de cursor/interaccion
+      cell.className = "sudoku-cell search-mode"; 
+      
+      // Persist Visual Cracks
+      if (blockedSet.has(`${r},${c}`)) {
+          cell.classList.add("cracked");
+      }
+      
       cell.dataset.r = r;
       cell.dataset.c = c;
       cell.textContent = gameState.sudokuSolution[r][c];
@@ -1135,10 +1167,10 @@ function updateSelectionPath(currentR, currentC) {
 
 function renderSelectionVisuals() {
   // Clear all "selected" (but not "found")
-  document.querySelectorAll(".search-cell.selected").forEach(el => el.classList.remove("selected"));
+  document.querySelectorAll(".sudoku-cell.selected").forEach(el => el.classList.remove("selected"));
   
   gameState.selectionPath.forEach(p => {
-    const cell = document.querySelector(`.search-cell[data-r='${p.r}'][data-c='${p.c}']`);
+    const cell = document.querySelector(`.sudoku-cell[data-r='${p.r}'][data-c='${p.c}']`);
     if (cell && !cell.classList.contains("found")) { // Keep found green
        cell.classList.add("selected");
     }
@@ -1176,8 +1208,13 @@ function validateSelection() {
     // Mark cells as found permanently
     // But which cells? The ones in the path.
     gameState.selectionPath.forEach(p => {
-      const cell = document.querySelector(`.search-cell[data-r='${p.r}'][data-c='${p.c}']`);
-      if (cell) cell.classList.add("found");
+      // Use sudoku-cell instead of search-cell since we unified the classes
+      const cell = document.querySelector(`.sudoku-cell[data-r='${p.r}'][data-c='${p.c}']`);
+      if (cell) {
+         cell.classList.add("found");
+         // Also clear selection style immediately so it turns green
+         cell.classList.remove("selected");
+      }
     });
     
     renderSearchTargets();
