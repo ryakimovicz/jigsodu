@@ -197,6 +197,7 @@ h1 {
   .jigsaw-pools-wrapper {
     position: static;
     height: auto;
+    min-height: 180px; /* Reserve space for 2 rows of pieces (80px*2 + gaps) */
     display: flex;
     flex-direction: row; /* Flow pieces horizontally */
     flex-wrap: wrap; /* Wrap to new lines (rows) */
@@ -243,6 +244,13 @@ h1 {
   #memory-stage {
     order: 3;
     margin-top: 20px;
+  }
+
+  .memory-board {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
   }
 }
 
@@ -810,12 +818,13 @@ footer {
     padding: 10px;
   }
 
-  /* Memory Board: Switch to 4 columns to fit narrow screen */
+  /* Memory Board: Switch to Flexbox to center last row items */
   .memory-board {
-    grid-template-columns: repeat(4, 1fr);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 8px; /* Tighter gaps */
     width: 100%; /* Ensure it fits container */
-    justify-content: center;
   }
 
   /* Shrink memory cards */
@@ -834,7 +843,13 @@ footer {
     width: 60px !important;
     height: 60px !important;
     font-size: 9px;
+    font-size: 9px;
     margin: 2px;
+  }
+
+  /* Update min-height for smaller pieces (60px * 2 rows roughly) */
+  .jigsaw-pools-wrapper {
+    min-height: 130px;
   }
 
   .jigsaw-pools-wrapper .jigsaw-cell {
