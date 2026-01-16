@@ -246,6 +246,36 @@ h1 {
   }
 }
 
+/* Very Small Screens Adjustments (e.g. iPhone SE 320px) */
+@media (max-width: 450px) {
+  :root {
+    --cell-size: 32px; /* Board becomes ~288px + borders fits in 320px */
+  }
+
+  /* Shrink memory cards */
+  .memory-card {
+    width: 65px;
+    height: 65px;
+  }
+
+  .memory-card .jigsaw-cell {
+    font-size: 10px; /* Smaller font inside small cards */
+    border-width: 0.5px;
+  }
+
+  /* Shrink collected pieces to fit 4 per row */
+  .jigsaw-pools-wrapper .jigsaw-piece {
+    width: 60px !important; /* 60*4 = 240 + gaps fits in 300px */
+    height: 60px !important;
+    font-size: 9px;
+  }
+
+  .jigsaw-pools-wrapper .jigsaw-cell {
+    width: 20px;
+    height: 20px;
+  }
+}
+
 .jigsaw-piece {
   width: 120px; /* 3 * 40px */
   height: 120px;
@@ -756,4 +786,59 @@ footer {
   color: rgba(255, 255, 255, 0.7);
   text-align: center;
   flex-shrink: 0; /* Prevent collapsing */
+}
+
+/* Very Small Screens Adjustments (e.g. iPhone SE 320px) */
+@media (max-width: 450px) {
+  :root {
+    --cell-size: 29px;
+    --board-size: 261px; /* Hardcoded fallback */
+  }
+
+  /* Force fix board width */
+  #main-board,
+  .drop-zone,
+  .collected-container {
+    width: 265px !important; /* ~29*9 + border */
+    height: 265px !important;
+    max-width: 100%;
+    margin: 0 auto 20px auto;
+  }
+
+  /* Reduce panel padding to prevent overflow */
+  .glass-panel {
+    padding: 10px;
+  }
+
+  /* Memory Board: Switch to 4 columns to fit narrow screen */
+  .memory-board {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px; /* Tighter gaps */
+    width: 100%; /* Ensure it fits container */
+    justify-content: center;
+  }
+
+  /* Shrink memory cards */
+  .memory-card {
+    width: 60px;
+    height: 60px;
+  }
+
+  .memory-card .jigsaw-cell {
+    font-size: 10px;
+    border-width: 0.5px;
+  }
+
+  /* Shrink collected pieces & gaps */
+  .jigsaw-pools-wrapper .jigsaw-piece {
+    width: 60px !important;
+    height: 60px !important;
+    font-size: 9px;
+    margin: 2px;
+  }
+
+  .jigsaw-pools-wrapper .jigsaw-cell {
+    width: 20px;
+    height: 20px;
+  }
 }
