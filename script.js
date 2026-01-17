@@ -153,25 +153,72 @@ function fillRemaining(grid, i, j) {
   return false;
 }
 
-function removeDigits(grid, count) {
-  let attempts = count;
-  while (attempts > 0) {
-    let r = Math.floor(Math.random() * 9);
-    let c = Math.floor(Math.random() * 9);
-    if (grid[r][c] !== 0) {
-      // Backup
-      let backup = grid[r][c];
-      grid[r][c] = 0;
 
-      // Optional: Check unique solution? 
-      // For this game, we assume simple removal is fine even if multiple solutions exist, 
-      // but usually we want unique. Checking uniqueness is expensive recursively.
-      // Let's stick to simple "remove N" for performance, as long as it's playable.
-      // But we should ensure at least it matches OUR solution.
-      
-      attempts--;
+function countSolutions(grid) {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (grid[r][c] === 0) {
+        let solutions = 0;
+        for (let num = 1; num <= 9; num++) {
+          if (checkIfSafe(grid, r, c, num)) {
+            grid[r][c] = num;
+            solutions += countSolutions(grid);
+            grid[r][c] = 0;
+            if (solutions > 1) return solutions; // Optimization: stop if multiple found
+          }
+        }
+        return solutions;
+      }
     }
   }
+  return 1; // Filled board is 1 solution
+}
+
+function removeDigits(grid, targetToRemove) {
+  // Generate list of all cell positions
+  let cells = [];
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      cells.push({ r, c });
+    }
+  }
+  
+  // Shuffle to randomize removal order
+  cells.sort(() => Math.random() - 0.5);
+  
+  let removedCount = 0;
+  
+  for (let i = 0; i < cells.length; i++) {
+    let { r, c } = cells[i];
+    
+    if (grid[r][c] !== 0) {
+      let backup = grid[r][c];
+      grid[r][c] = 0; // Tentative remove
+      
+      // Check uniqueness using a COPY of the grid because countSolutions uses backtracking
+      // Actually countSolutions unwinds grid modifications if it backtracks, 
+      // but if it finds a solution it returns. 
+      // Wait, countSolutions modifies 'grid' in place but resets to 0 on backtrack.
+      // However, when it returns 1 (found), the board is full from the *recursive* perspective?
+      // No, let's trace:
+      // If full -> return 1.
+      // If we find 1 solution, we backtrack (reset to 0) to find MORE solutions.
+      // So 'grid' is restored to original state (with 0 at r,c) after countSolutions returns.
+      // So we can pass 'grid' directly.
+      
+      let solutions = countSolutions(grid);
+      
+      if (solutions !== 1) {
+        // Not unique (or 0 solutions, which shouldn't happen here), restore
+        grid[r][c] = backup;
+      } else {
+        // Unique solution maintained, keep it removed
+        removedCount++;
+        if (removedCount >= targetToRemove) break;
+      }
+    }
+  }
+  console.log(`Sudoku Generated: Removed ${removedCount} digits.`);
 }
 
 // --- Initialization ---
