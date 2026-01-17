@@ -1328,52 +1328,61 @@ function givePeaksHint() {
 }
 
 function giveJigsawHint() {
-  // Find first incorrect slot
   const slots = document.querySelectorAll(".jigsaw-slot");
-  let targetSlot = null;
-  let missingPieceId = null;
+  let foundError = false;
 
+  // 1. Check for ACTUAL ERRORS (Misplaced pieces)
+  // We prefer showing an error over a hint if both exist.
   for (let i = 0; i < 9; i++) {
-    // Current state check
-    if (gameState.jigsawCorrectness[i] !== i) {
-      targetSlot = slots[i];
-      missingPieceId = i;
+    const currentPieceId = gameState.jigsawCorrectness[i];
+    
+    // If there is a piece (not null) AND it is wrong (id != i)
+    if (currentPieceId !== null && currentPieceId !== i) {
+      const slot = slots[i];
+      if (slot.firstChild) {
+         const piece = slot.firstChild;
+         piece.classList.add("error-highlight"); // Red shake
+         setTimeout(() => piece.classList.remove("error-highlight"), 1500);
+         foundError = true;
+      }
+      break; // Only show one error at a time
+    }
+  }
+
+  if (foundError) return;
+
+  // 2. If no errors, show a HINT (Visual only, no move)
+  // Find the first empty slot
+  let emptySlotIndex = -1;
+  for (let i = 0; i < 9; i++) {
+    if (gameState.jigsawCorrectness[i] === null) {
+      emptySlotIndex = i;
       break;
     }
   }
 
-  if (targetSlot === null) return; // All correct
-
-  // Find the piece we need
-  const allPieces = [...document.querySelectorAll(".jigsaw-piece")];
-  const pieceToMove = allPieces.find(p => parseInt(p.dataset.blockId) === missingPieceId);
-
-  if (pieceToMove) {
-    const wrapper = document.querySelector(".jigsaw-pools-wrapper");
+  if (emptySlotIndex !== -1) {
+    // Find the piece that belongs here
+    const allPieces = [...document.querySelectorAll(".jigsaw-piece")];
+    const targetPiece = allPieces.find(p => parseInt(p.dataset.blockId) === emptySlotIndex);
     
-    // If target slot is occupied by a WRONG piece, move that piece back to wrapper
-    if (targetSlot.children.length > 0) {
-      const existingPiece = targetSlot.firstChild;
-      if (existingPiece !== pieceToMove) {
-        wrapper.appendChild(existingPiece);
-        // Reset to absolute and place clearly to the side (e.g. Left bank)
-        existingPiece.style.position = "absolute";
-        existingPiece.style.left = "5%";
-        existingPiece.style.top = "50%"; // Generic middle placement
-      }
+    if (targetPiece) {
+      // Highlight it visually (e.g. Yellow/Gold) to suggest "Use this one next"
+      // We reuse a similar animation or style but different color?
+      // Let's stick a simple transform or border.
+      // Or just reuse error-highlight but with different color? 
+      // User asked for "mark wrong pieces". For hints, let's make it distinct.
+      
+      targetPiece.style.boxShadow = "0 0 15px 5px #fdcb6e";
+      targetPiece.style.transform = "scale(1.1)";
+      targetPiece.style.zIndex = "100";
+      
+      setTimeout(() => {
+        targetPiece.style.boxShadow = "";
+        targetPiece.style.transform = "";
+        targetPiece.style.zIndex = "";
+      }, 1500);
     }
-    
-    // Move correct piece to slot
-    targetSlot.appendChild(pieceToMove);
-    
-    // CRITICAL: Reset absolute positioning so it fits in the slot
-    pieceToMove.style.position = "static";
-    pieceToMove.style.transform = "none";
-    pieceToMove.style.left = "";
-    pieceToMove.style.top = "";
-    
-    updateJigsawState();
-    checkJigsawCompletion();
   }
 }
 
