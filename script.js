@@ -211,6 +211,7 @@ function setupJigsawStructure() {
     // Add event listeners now (ready for drag later)
     slot.addEventListener("dragover", handleDragOver);
     slot.addEventListener("drop", handleDrop);
+    slot.addEventListener("click", handleSlotClick); // Add Click Support
     
     mainBoard.appendChild(slot);
   }
@@ -480,6 +481,7 @@ function transitionToJigsawAnimated() {
     
     p.draggable = true;
     p.addEventListener("dragstart", handleDragStart);
+    p.addEventListener("click", handlePieceClick); // Add Click Support
     // Visual cue they are now active?
     p.style.cursor = "grab";
   });
@@ -542,6 +544,7 @@ function initJigsaw() {
     slot.style.border = "1px dashed rgba(255,255,255,0.3)";
     slot.addEventListener("dragover", handleDragOver);
     slot.addEventListener("drop", handleDrop);
+    slot.addEventListener("click", handleSlotClick); // Click handler
     dropZone.appendChild(slot);
 
     if (block === 4) {
@@ -562,6 +565,7 @@ function initJigsaw() {
       slot.appendChild(piece);
     } else {
       piece.addEventListener("dragstart", handleDragStart);
+      piece.addEventListener("click", handlePieceClick); // Click handler
       pieces.push(piece);
     }
   }
@@ -592,9 +596,13 @@ function initJigsaw() {
   // Allow dropping anywhere on main wrapper
   container.addEventListener("dragover", handleDragOver);
   container.addEventListener("drop", handleDrop);
+  
+  // Click interaction for wrapper (Deselect or Move to Pool)
+  container.addEventListener("click", handleWrapperClick);
 }
 
 let draggedPiece = null;
+let selectedPiece = null; // New Selection State
 let grabOffset = { x: 0, y: 0 }; // To track mouse offset
 
 function handleDragStart(e) {
@@ -707,6 +715,135 @@ function handleDrop(e) {
   }
   
   draggedPiece = null;
+}
+
+// --- Click Interaction Handlers ---
+
+function handlePieceClick(e) {
+  // Prevent propagation so we don't trigger slot/wrapper clicks
+  e.stopPropagation(); 
+  
+  if (this.id === "center-fixed-piece" || this.classList.contains("fixed-piece")) return;
+
+  if (selectedPiece === this) {
+    deselectPiece();
+  } else {
+    if (selectedPiece) {
+      // Swap with previously selected piece
+      performSwap(selectedPiece, this);
+    } else {
+      selectPiece(this);
+    }
+  }
+}
+
+function handleSlotClick(e) {
+    if (!selectedPiece) return;
+    
+    // Move selected piece to this slot
+    const slot = this;
+    
+    // If slot is not empty, the piece click handler would have fired (swapping),
+    // unless the events didn't propagate or we clicked the gap?
+    // If we click the slot itself (gap), proceed.
+    
+    if (slot.children.length === 0) {
+        slot.appendChild(selectedPiece);
+        selectedPiece.style.position = "static";
+        selectedPiece.style.left = "";
+        selectedPiece.style.top = "";
+        selectedPiece.style.transform = "none";
+        
+        checkJigsawCompletion();
+        deselectPiece();
+    }
+}
+
+function handleWrapperClick(e) {
+    if (!selectedPiece) return;
+    
+    // Check if we clicked on a slot or piece (should be handled by stops, but double check target)
+    if (e.target.closest(".jigsaw-slot") || e.target.closest(".jigsaw-piece")) return;
+    
+    // Move to pool area at click location
+    const container = document.querySelector(".jigsaw-pools-wrapper");
+    const rect = container.getBoundingClientRect();
+    
+    // Center the piece (120x120 -> 60 offset)
+    // Ensure we stay within bounds?
+    // For now simple translation.
+    
+    let x = e.clientX - rect.left - 60;
+    let y = e.clientY - rect.top - 60;
+    
+    container.appendChild(selectedPiece);
+    selectedPiece.style.position = "absolute";
+    selectedPiece.style.left = `${x}px`;
+    selectedPiece.style.top = `${y}px`;
+    selectedPiece.style.transform = "none";
+    
+    updateJigsawState();
+    deselectPiece();
+}
+
+function selectPiece(piece) {
+    if (selectedPiece) deselectPiece();
+    selectedPiece = piece;
+    piece.classList.add("selected");
+}
+
+function deselectPiece() {
+    if (selectedPiece) {
+        selectedPiece.classList.remove("selected");
+        selectedPiece = null;
+    }
+}
+
+function performSwap(pieceA, pieceB) {
+  // Swap pieceA (selected) with pieceB (clicked target)
+  
+  // Logic mostly mirrors handleDrop swap but cleaner
+  const parentA = pieceA.parentNode;
+  const parentB = pieceB.parentNode;
+  
+  const isSlotA = parentA.classList.contains("jigsaw-slot");
+  const isSlotB = parentB.classList.contains("jigsaw-slot");
+  
+  // Positional Data for restoring positions if swapping to/from pool
+  const styleA_left = pieceA.style.left;
+  const styleA_top = pieceA.style.top;
+  const styleA_pos = pieceA.style.position;
+  
+  const styleB_left = pieceB.style.left;
+  const styleB_top = pieceB.style.top;
+  const styleB_pos = pieceB.style.position;
+  
+  // Move A to Parent B
+  parentB.appendChild(pieceA);
+  if (isSlotB) {
+      pieceA.style.position = "static";
+      pieceA.style.left = "";
+      pieceA.style.top = "";
+  } else {
+      pieceA.style.position = styleB_pos;
+      pieceA.style.left = styleB_left;
+      pieceA.style.top = styleB_top;
+  }
+  
+  // Move B to Parent A
+  parentA.appendChild(pieceB);
+  if (isSlotA) {
+      pieceB.style.position = "static";
+      pieceB.style.left = "";
+      pieceB.style.top = "";
+  } else {
+      pieceB.style.position = styleA_pos;
+      pieceB.style.left = styleA_left;
+      pieceB.style.top = styleA_top;
+  }
+  
+  checkJigsawCompletion();
+  deselectPiece();
 }
 
 function moveToWrapper(piece) {
