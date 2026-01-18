@@ -6,7 +6,7 @@ const gameState = {
   sudokuPuzzle: [],
   jigsawCorrectness: Array(9).fill(null),
   currentNumber: 1,
-  
+
   // Memory Game State
   memoryCards: [], // Array of { id, pieceId, isFlipped, isMatched }
   flippedCards: [], // IDs of currently flipped cards
@@ -19,15 +19,73 @@ const gameState = {
 
   // Number Search State
   searchTargets: [], // Array of objects { sequence: "123", id: "Target1" }
-  foundTargets: [],  // Array of target IDs found
+  foundTargets: [], // Array of target IDs found
   isSelecting: false,
   selectionStart: null, // {r, c}
   selectionPath: [], // Array of {r, c}
 };
 
+let uiScale = 1;
+
+function resizeGame() {
+  const scaler = document.getElementById("game-scaler");
+  const container = document.querySelector(".game-container");
+
+  if (!scaler || !container) return;
+
+  // 1. Reset transform and width to let browser layout natural responsive size
+  scaler.style.transform = "none";
+  scaler.style.transformOrigin = "center top"; // Ensure we scale from top
+  scaler.style.width = "100%";
+  scaler.style.height = "auto";
+
+  // 2. Measure actual size
+  const contentWidth = Math.max(container.scrollWidth, container.offsetWidth);
+  const contentHeight = Math.max(
+    container.scrollHeight,
+    container.offsetHeight,
+  );
+
+  const availableWidth = window.innerWidth;
+  const availableHeight = window.innerHeight;
+
+  // 3. Calculate Scale
+  // Dynamic buffers based on screen size (width AND height)
+
+  const isMobile = availableWidth < 768;
+  const isShortScreen = availableHeight < 900; // e.g. 1366x768, laptops
+
+  // X Buffer: Minimal on mobile, generous on desktop
+  const safetyBufferX = isMobile ? 0 : 80;
+
+  // Y Buffer: Minimal on mobile, dependent on height for desktop
+  let safetyBufferY = 80; // Default generous buffer
+  if (isMobile) {
+    safetyBufferY = 0;
+  } else if (isShortScreen) {
+    // User reported "too much margin" on 1366x768.
+    // Reducing strictly to 0 allows full height usage.
+    // CSS padding/centering will handle the rest.
+    safetyBufferY = 0;
+  }
+
+  const scaleX = (availableWidth - safetyBufferX) / contentWidth;
+  const scaleY = (availableHeight - safetyBufferY) / contentHeight;
+
+  // Use smaller scale to fit both
+  uiScale = Math.min(scaleX, scaleY);
+
+  // 4. Apply Scale
+  scaler.style.transform = `scale(${uiScale})`;
+}
+
+window.addEventListener("resize", resizeGame);
+window.addEventListener("load", () => {
+  // Slight delay to ensure layout is stable
+  setTimeout(resizeGame, 100);
+});
+
 // ... (initGame, initJigsaw, etc - lines 45-420 unchanged)
-
-
 
 // DOM Elements
 const instructionText = document.getElementById("instruction-text");
@@ -45,7 +103,9 @@ const mainBoard = document.getElementById("main-board");
 
 function generateSudokuData() {
   // 1. Generate full valid board
-  const solution = Array(9).fill().map(() => Array(9).fill(0));
+  const solution = Array(9)
+    .fill()
+    .map(() => Array(9).fill(0));
   fillDiagonal(solution);
   fillRemaining(solution, 0, 3);
   gameState.sudokuSolution = JSON.parse(JSON.stringify(solution)); // Deep copy
@@ -153,7 +213,6 @@ function fillRemaining(grid, i, j) {
   return false;
 }
 
-
 function countSolutions(grid) {
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
@@ -182,22 +241,22 @@ function removeDigits(grid, targetToRemove) {
       cells.push({ r, c });
     }
   }
-  
+
   // Shuffle to randomize removal order
   cells.sort(() => Math.random() - 0.5);
-  
+
   let removedCount = 0;
-  
+
   for (let i = 0; i < cells.length; i++) {
     let { r, c } = cells[i];
-    
+
     if (grid[r][c] !== 0) {
       let backup = grid[r][c];
       grid[r][c] = 0; // Tentative remove
-      
+
       // Check uniqueness using a COPY of the grid because countSolutions uses backtracking
-      // Actually countSolutions unwinds grid modifications if it backtracks, 
-      // but if it finds a solution it returns. 
+      // Actually countSolutions unwinds grid modifications if it backtracks,
+      // but if it finds a solution it returns.
       // Wait, countSolutions modifies 'grid' in place but resets to 0 on backtrack.
       // However, when it returns 1 (found), the board is full from the *recursive* perspective?
       // No, let's trace:
@@ -205,9 +264,9 @@ function removeDigits(grid, targetToRemove) {
       // If we find 1 solution, we backtrack (reset to 0) to find MORE solutions.
       // So 'grid' is restored to original state (with 0 at r,c) after countSolutions returns.
       // So we can pass 'grid' directly.
-      
+
       let solutions = countSolutions(grid);
-      
+
       if (solutions !== 1) {
         // Not unique (or 0 solutions, which shouldn't happen here), restore
         grid[r][c] = backup;
@@ -224,21 +283,46 @@ function removeDigits(grid, targetToRemove) {
 // --- Initialization ---
 // --- Initialization ---
 function initGame() {
-  generateSudokuData(); 
+  generateSudokuData();
   setupJigsawStructure(); // Prepare board slots and pools
   initMemoryGame();
   initSudokuControls();
-  
+
   // Ensure Jigsaw Overlay is visible (for side pieces)
   jigsawStage.classList.remove("hidden");
   jigsawStage.classList.add("active");
+
+  // Trigger initial resize
+  setTimeout(resizeGame, 0);
+
+  initTooltip();
+}
+
+function initTooltip() {
+  const trigger = document.getElementById("info-trigger");
+  const tooltip = document.getElementById("info-tooltip");
+
+  if (!trigger || !tooltip) return;
+
+  // Toggle on click (Mobile & Desktop click support)
+  trigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    tooltip.classList.toggle("hidden-tooltip");
+  });
+
+  // Close when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!trigger.contains(e.target) && !tooltip.contains(e.target)) {
+      tooltip.classList.add("hidden-tooltip");
+    }
+  });
 }
 
 function setupJigsawStructure() {
   // Clear Main Board (Center)
   mainBoard.innerHTML = "";
   mainBoard.className = "drop-zone"; // Set as grid immediately
-  
+
   // Clear Pool Wrapper
   const container = document.querySelector(".jigsaw-pools-wrapper");
   if (container) {
@@ -247,84 +331,84 @@ function setupJigsawStructure() {
     container.addEventListener("dragover", handleDragOver);
     container.addEventListener("drop", handleDrop);
   }
-  
+
   // Generate 9 Slots (Empty)
   for (let i = 0; i < 9; i++) {
     const slot = document.createElement("div");
     slot.className = "jigsaw-slot";
     slot.dataset.slotId = i;
     slot.style.border = "1px dashed rgba(255,255,255,0.3)"; // Visible during memory? Maybe subtle.
-    
+
     // Add event listeners now (ready for drag later)
     slot.addEventListener("dragover", handleDragOver);
     slot.addEventListener("drop", handleDrop);
     slot.addEventListener("click", handleSlotClick); // Add Click Support
-    
+
     mainBoard.appendChild(slot);
   }
 }
 
 function renderJigsawPiece(blockId) {
-    const piece = document.createElement("div");
-    piece.className = "jigsaw-piece";
-    piece.draggable = false; // Locked during memory
-    piece.dataset.blockId = blockId;
-    // Cells
-    const startRow = Math.floor(blockId / 3) * 3;
-    const startCol = (blockId % 3) * 3;
-    
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 3; c++) {
-        const cell = document.createElement("div");
-        cell.className = "jigsaw-cell";
-        const value = gameState.sudokuPuzzle[startRow + r][startCol + c];
-        cell.textContent = value !== 0 ? value : "";
-        piece.appendChild(cell);
-      }
+  const piece = document.createElement("div");
+  piece.className = "jigsaw-piece";
+  piece.draggable = false; // Locked during memory
+  piece.dataset.blockId = blockId;
+  // Cells
+  const startRow = Math.floor(blockId / 3) * 3;
+  const startCol = (blockId % 3) * 3;
+
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      const cell = document.createElement("div");
+      cell.className = "jigsaw-cell";
+      const value = gameState.sudokuPuzzle[startRow + r][startCol + c];
+      cell.textContent = value !== 0 ? value : "";
+      piece.appendChild(cell);
     }
-    return piece;
+  }
+  return piece;
 }
 
 function collectPiece(pieceId) {
   const blockId = parseInt(pieceId);
   const piece = renderJigsawPiece(blockId);
-  
+
   // Determine Destination
   if (blockId === 4) {
     // Center Piece -> Center Slot (Slot 4)
     const centerSlot = mainBoard.children[4];
     piece.style.position = "static";
-    
+
     // NUCLEAR LOCK (Moved from initJigsaw to Memory Collection Logic)
-    piece.id = "center-fixed-piece"; 
-    piece.classList.add("fixed-piece"); 
+    piece.id = "center-fixed-piece";
+    piece.classList.add("fixed-piece");
     piece.classList.add("locked-unique-piece");
-    
+
     piece.style.pointerEvents = "none";
     piece.style.userSelect = "none";
     // piece.style.border = "4px solid #ff0000"; // disable or keep for debug? User said "no border seen"
     // Let's keep a subtle indicator or none if standard usage.
-    // User complained about "not seeing distinct border". 
-    // I previously added red border to debug. 
+    // User complained about "not seeing distinct border".
+    // I previously added red border to debug.
     // I will use a subtle lock indicator now that logic is fixed.
-    piece.style.boxShadow = "inset 0 0 10px rgba(0,0,0,0.5)"; 
-    
-    piece.setAttribute("draggable", "false"); 
-    piece.draggable = false; 
-    
+    piece.style.boxShadow = "inset 0 0 10px rgba(0,0,0,0.5)";
+
+    piece.setAttribute("draggable", "false");
+    piece.draggable = false;
+
     centerSlot.appendChild(piece);
   } else {
     // Side Pool
     const container = document.querySelector(".jigsaw-pools-wrapper");
     container.appendChild(piece);
-    
+
     // Sequential Filling Logic
     const index = gameState.sidePiecesFound;
     gameState.sidePiecesFound++; // Increment for next piece
-    
+
     let isLeft = false;
     let colPos = 0;
-    
+
     if (index < 4) {
       isLeft = true;
       colPos = index;
@@ -332,17 +416,17 @@ function collectPiece(pieceId) {
       isLeft = false;
       colPos = index - 4;
     }
-    
+
     const posX = isLeft ? 2 : 86; // 2% Left, 86% Right
-    const posY = 20 + (colPos * 140); // 140px vertical step
-    
+    const posY = 20 + colPos * 140; // 140px vertical step
+
     piece.style.position = "absolute";
     piece.style.left = `${posX}%`;
     piece.style.top = `${posY}px`;
-    
+
     // Animate Enter
     piece.style.transform = "scale(0)";
-    setTimeout(() => piece.style.transform = "scale(1)", 50);
+    setTimeout(() => (piece.style.transform = "scale(1)"), 50);
   }
 }
 
@@ -357,9 +441,10 @@ function updateGameSubtitle(text) {
 // --- Stage 0: Memory Game ---
 function initMemoryGame() {
   const subtitle = document.getElementById("game-subtitle");
-  if(subtitle) subtitle.innerText = "Memotest";
-  instructionText.innerText = "Encuentra los pares para recolectar las piezas del rompecabezas.";
-  
+  if (subtitle) subtitle.innerText = "Memotest";
+  instructionText.innerText =
+    "Encuentra los pares para recolectar las piezas del rompecabezas.";
+
   const board = document.getElementById("memory-board");
   board.innerHTML = "";
 
@@ -379,7 +464,7 @@ function initMemoryGame() {
   cards.sort(() => Math.random() - 0.5);
   gameState.memoryCards = cards;
 
-  cards.forEach(cardData => {
+  cards.forEach((cardData) => {
     const card = createMemoryCard(cardData);
     board.appendChild(card);
   });
@@ -395,44 +480,44 @@ function createMemoryCard(cardData) {
   // function collectPiece(pieceId) { ... }
   // // --- Stage 0: Memory Game ---
   // function initMemoryGame() { ... }
-  
+
   // So I can replace the block containing both.
   // I'll re-include createMemoryCard or just cut before it if possible.
-  
+
   // Actually, I can just replace collectPiece and initMemoryGame bodies separately?
   // Or together.
-  
+
   card.className = "memory-card";
   card.dataset.id = cardData.id;
   card.dataset.pieceId = cardData.pieceId;
   card.onclick = handleCardClick;
 
   const inner = document.createElement("div"); // Not used really?
-  
+
   const back = document.createElement("div");
   back.className = "card-back";
   back.innerText = "?";
 
   const front = document.createElement("div");
   front.className = "card-front";
-  
+
   // Render mini piece inside front (Full piece actually?)
   // We use renderJigsawPiece now? No, cards are small 70x70.
   // initJigsaw uses renderJigsawPiece (120x120).
-  // Cards used renderMiniPiece? 
+  // Cards used renderMiniPiece?
   // Let's check renderMiniPiece existence. It might be gone or legacy.
   // Step 516 didn't show renderMiniPiece.
   // It showed renderJigsawPiece.
   // But collectPiece uses renderJigsawPiece.
   // createMemoryCard (line 243 in legacy) used renderMiniPiece.
   // I should check if renderMiniPiece exists.
-  
+
   const miniPiece = renderJigsawPiece(cardData.pieceId); // Reuse full piece logic?
   // Ideally yes, but scaled via CSS (.memory-card .jigsaw-piece) logic?
   // .memory-card logic in CSS handles children?
   // I'll stick to renderJigsawPiece logic inside card?
   // Let's assume renderJigsawPiece is fine.
-  
+
   front.appendChild(miniPiece);
 
   card.appendChild(front);
@@ -441,14 +526,13 @@ function createMemoryCard(cardData) {
   return card;
 }
 
-
 function renderMiniPiece(blockId) {
   const startRow = Math.floor(blockId / 3) * 3;
   const startCol = (blockId % 3) * 3;
-  
+
   const piece = document.createElement("div");
   piece.className = "mini-piece";
-  
+
   for (let r = 0; r < 3; r++) {
     for (let c = 0; c < 3; c++) {
       const cell = document.createElement("div");
@@ -486,7 +570,7 @@ function checkMemoryMatch() {
     card2.classList.add("matched");
     gameState.flippedCards = [];
     gameState.isLocked = false;
-    
+
     // Animate collection
     collectPiece(card1.dataset.pieceId);
 
@@ -509,36 +593,40 @@ function checkMemoryMatch() {
 function transitionToJigsawAnimated() {
   gameState.currentStage = 1;
   const subtitle = document.getElementById("game-subtitle");
-  if(subtitle) subtitle.innerText = "Rompecabezas";
+  if (subtitle) subtitle.innerText = "Rompecabezas";
   instructionText.innerText = "Arma el rompecabezas para revelar el tablero.";
-  
+
   // Hide Memory UI (Fade out cards provided by memory-board container? Or just the stage?)
   // Memory stage container currently holds instructions/controls?
   memoryStage.classList.add("hidden");
   memoryStage.classList.remove("active");
-  
+
   // Unlock Jigsaw Pieces (Enable Drag)
   const pieces = document.querySelectorAll(".jigsaw-piece");
-  pieces.forEach(p => {
+  pieces.forEach((p) => {
     // Skip the fixed center piece
-    if (p.id === "center-fixed-piece" || p.classList.contains("fixed-piece") || p.dataset.blockId === "4") {
-        p.style.cursor = "default";
-        return; 
+    if (
+      p.id === "center-fixed-piece" ||
+      p.classList.contains("fixed-piece") ||
+      p.dataset.blockId === "4"
+    ) {
+      p.style.cursor = "default";
+      return;
     }
-    
+
     p.draggable = true;
     p.addEventListener("dragstart", handleDragStart);
     p.addEventListener("click", handlePieceClick); // Add Click Support
     // Visual cue they are now active?
     p.style.cursor = "grab";
   });
-  
+
   // Enable Background Drops
   jigsawStage.classList.add("interactive");
-  
+
   // Remove Memory Cards if any remain (should be all matched/gone?)
   // Actually matched cards might still be in DOM?
-  // Memory logic usually keeps them as "matched". 
+  // Memory logic usually keeps them as "matched".
   // We can clear memory-board to be safe/clean.
   document.getElementById("memory-board").innerHTML = "";
 
@@ -551,13 +639,12 @@ function transitionToJigsaw() {
   // ...
 }
 
-
 // --- Stage 1: Jigsaw ---
 // --- Stage 1: Jigsaw ---
 function initJigsaw() {
   const container = document.querySelector(".jigsaw-pools-wrapper");
-  const dropZone = mainBoard; 
-  
+  const dropZone = mainBoard;
+
   // Clear previous pieces
   container.innerHTML = "";
   dropZone.innerHTML = "";
@@ -596,19 +683,19 @@ function initJigsaw() {
 
     if (block === 4) {
       // Center piece fixed in slot
-      piece.id = "center-fixed-piece"; 
-      piece.style.position = "static"; 
+      piece.id = "center-fixed-piece";
+      piece.style.position = "static";
       piece.classList.add("locked-unique-piece"); // New unique class
-      
+
       // NUCLEAR OPTION: INLINE STYLES to bypass cache/CSS issues
       piece.style.pointerEvents = "none";
       piece.style.userSelect = "none";
       piece.style.border = "4px solid #ff0000"; // Red border for verification
       piece.style.boxShadow = "0 0 20px rgba(255,0,0,0.5)";
-      
-      piece.setAttribute("draggable", "false"); 
-      piece.draggable = false; 
-      
+
+      piece.setAttribute("draggable", "false");
+      piece.draggable = false;
+
       slot.appendChild(piece);
     } else {
       piece.addEventListener("dragstart", handleDragStart);
@@ -620,20 +707,20 @@ function initJigsaw() {
   // Scatter remaining pieces on sides (Ordered Columns)
   // Left Side: Indices 0, 1, 2, 3
   // Right Side: Indices 4, 5, 6, 7
-  
+
   pieces.forEach((p, index) => {
     container.appendChild(p);
-    
+
     const isLeft = index < 4;
     const colIndex = index % 4; // 0..3
-    
+
     // Fixed positions for tidy start
     // Left: 2%, Right: 82%
     // Top: Fixed pixels to avoid collapse
-    
+
     const posX = isLeft ? 2 : 86;
-    const posY = 20 + (colIndex * 140); // 140px step (120 piece + 20 gap)
-    
+    const posY = 20 + colIndex * 140; // 140px step (120 piece + 20 gap)
+
     p.style.left = `${posX}%`;
     p.style.top = `${posY}px`;
   });
@@ -643,7 +730,7 @@ function initJigsaw() {
   // Allow dropping anywhere on main wrapper
   container.addEventListener("dragover", handleDragOver);
   container.addEventListener("drop", handleDrop);
-  
+
   // Click interaction for wrapper (Deselect or Move to Pool)
   container.addEventListener("click", handleWrapperClick);
 }
@@ -657,11 +744,11 @@ function handleDragStart(e) {
     e.preventDefault();
     return;
   }
-  
+
   draggedPiece = this;
   e.dataTransfer.effectAllowed = "move";
   this.classList.add("dragging");
-  
+
   const rect = this.getBoundingClientRect();
   grabOffset.x = e.clientX - rect.left;
   grabOffset.y = e.clientY - rect.top;
@@ -673,17 +760,22 @@ function handleDragOver(e) {
 }
 
 // Global Drag Blocker for Fixed Pieces
-document.addEventListener("dragstart", (e) => {
-  const isLocked = e.target.id === "center-fixed-piece" || 
-                   e.target.classList.contains("locked-unique-piece") ||
-                   e.target.classList.contains("fixed-piece");
-                   
-  if (isLocked) {
-    e.preventDefault();
-    e.stopPropagation();
-    return false;
-  }
-}, true);
+document.addEventListener(
+  "dragstart",
+  (e) => {
+    const isLocked =
+      e.target.id === "center-fixed-piece" ||
+      e.target.classList.contains("locked-unique-piece") ||
+      e.target.classList.contains("fixed-piece");
+
+    if (isLocked) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  },
+  true,
+);
 
 function handleDrop(e) {
   e.preventDefault();
@@ -695,7 +787,7 @@ function handleDrop(e) {
 
   // Check if we dropped ON the board but not in a slot (ignore?)
   if (mainBoardEl.contains(e.target) && !targetSlot) {
-     return; // Invalid drop area on grid
+    return; // Invalid drop area on grid
   }
 
   // Capture Origin Info BEFORE moving anything
@@ -709,58 +801,61 @@ function handleDrop(e) {
     if (targetSlot.children.length > 0) {
       // Use firstElementChild to ensure we get the DIV, not a text node
       const existing = targetSlot.firstElementChild;
-      
+
       // CRITICAL: Check if existing piece is locked (center piece)
       if (existing) {
-         const isLocked = existing.id === "center-fixed-piece" || existing.classList.contains("locked-unique-piece");
-         if (isLocked) return;
+        const isLocked =
+          existing.id === "center-fixed-piece" ||
+          existing.classList.contains("locked-unique-piece");
+        if (isLocked) return;
       }
-      
+
       if (existing !== draggedPiece) {
         // SWAP LOGIC
         // 1. Move existing piece to where dragged piece came from
         originParent.appendChild(existing);
-        
+
         if (originIsSlot) {
-            // Swapped with another slot -> Become static
-            existing.style.position = "static";
-            existing.style.transform = "none";
-            existing.style.left = "";
-            existing.style.top = "";
+          // Swapped with another slot -> Become static
+          existing.style.position = "static";
+          existing.style.transform = "none";
+          existing.style.left = "";
+          existing.style.top = "";
         } else {
-            // Swapped with pool -> Become absolute at dragged piece's old pos
-            existing.style.position = "absolute";
-            existing.style.left = originLeft;
-            existing.style.top = originTop;
+          // Swapped with pool -> Become absolute at dragged piece's old pos
+          existing.style.position = "absolute";
+          existing.style.left = originLeft;
+          existing.style.top = originTop;
         }
       }
     }
-    
+
     // 2. Move dragged piece to target slot
     targetSlot.appendChild(draggedPiece);
     draggedPiece.style.position = "static";
     draggedPiece.style.transform = "none";
     draggedPiece.style.left = "";
     draggedPiece.style.top = "";
-    
+
     checkJigsawCompletion();
-    
   } else if (targetWrapper) {
     // Dropping freely on background
     targetWrapper.appendChild(draggedPiece); // Re-append to be child of wrapper
-    
+
     // Calculate position relative to container
     const containerRect = targetWrapper.getBoundingClientRect();
-    const x = e.clientX - containerRect.left - grabOffset.x;
-    const y = e.clientY - containerRect.top - grabOffset.y;
-    
+
+    // Adjust for User Interface Scale
+    const x = (e.clientX - containerRect.left - grabOffset.x) / uiScale;
+    const y = (e.clientY - containerRect.top - grabOffset.y) / uiScale;
+
     draggedPiece.style.position = "absolute";
     draggedPiece.style.left = `${x}px`;
     draggedPiece.style.top = `${y}px`;
-    
+
     updateJigsawState();
   }
-  
+
   draggedPiece = null;
 }
 
@@ -768,9 +863,13 @@ function handleDrop(e) {
 
 function handlePieceClick(e) {
   // Prevent propagation so we don't trigger slot/wrapper clicks
-  e.stopPropagation(); 
-  
-  if (this.id === "center-fixed-piece" || this.classList.contains("fixed-piece")) return;
+  e.stopPropagation();
+
+  if (
+    this.id === "center-fixed-piece" ||
+    this.classList.contains("fixed-piece")
+  )
+    return;
 
   if (selectedPiece === this) {
     deselectPiece();
@@ -785,121 +884,122 @@ function handlePieceClick(e) {
 }
 
 function handleSlotClick(e) {
-    if (!selectedPiece) return;
-    
-    // Move selected piece to this slot
-    const slot = this;
-    
-    // If slot is not empty, the piece click handler would have fired (swapping),
-    // unless the events didn't propagate or we clicked the gap?
-    // If we click the slot itself (gap), proceed.
-    
-    if (slot.children.length === 0) {
-        slot.appendChild(selectedPiece);
-        selectedPiece.style.position = "static";
-        selectedPiece.style.left = "";
-        selectedPiece.style.top = "";
-        selectedPiece.style.transform = "none";
-        
-        checkJigsawCompletion();
-        deselectPiece();
-    }
+  if (!selectedPiece) return;
+
+  // Move selected piece to this slot
+  const slot = this;
+
+  // If slot is not empty, the piece click handler would have fired (swapping),
+  // unless the events didn't propagate or we clicked the gap?
+  // If we click the slot itself (gap), proceed.
+
+  if (slot.children.length === 0) {
+    slot.appendChild(selectedPiece);
+    selectedPiece.style.position = "static";
+    selectedPiece.style.left = "";
+    selectedPiece.style.top = "";
+    selectedPiece.style.transform = "none";
+
+    checkJigsawCompletion();
+    deselectPiece();
+  }
 }
 
 function handleWrapperClick(e) {
-    if (!selectedPiece) return;
-    
-    // Check if we clicked on a slot or piece (should be handled by stops, but double check target)
-    if (e.target.closest(".jigsaw-slot") || e.target.closest(".jigsaw-piece")) return;
-    
-    // Move to pool area at click location
-    const container = document.querySelector(".jigsaw-pools-wrapper");
-    const rect = container.getBoundingClientRect();
-    
-    // Center the piece (120x120 -> 60 offset)
-    // Ensure we stay within bounds?
-    // For now simple translation.
-    
-    let x = e.clientX - rect.left - 60;
-    let y = e.clientY - rect.top - 60;
-    
-    container.appendChild(selectedPiece);
-    selectedPiece.style.position = "absolute";
-    selectedPiece.style.left = `${x}px`;
-    selectedPiece.style.top = `${y}px`;
-    selectedPiece.style.transform = "none";
-    
-    updateJigsawState();
-    deselectPiece();
+  if (!selectedPiece) return;
+
+  // Check if we clicked on a slot or piece (should be handled by stops, but double check target)
+  if (e.target.closest(".jigsaw-slot") || e.target.closest(".jigsaw-piece"))
+    return;
+
+  // Move to pool area at click location
+  const container = document.querySelector(".jigsaw-pools-wrapper");
+  const rect = container.getBoundingClientRect();
+
+  // Center the piece (120x120 -> 60 offset)
+  // Ensure we stay within bounds?
+  // For now simple translation.
+
+  let x = e.clientX - rect.left - 60;
+  let y = e.clientY - rect.top - 60;
+
+  container.appendChild(selectedPiece);
+  selectedPiece.style.position = "absolute";
+  selectedPiece.style.left = `${x}px`;
+  selectedPiece.style.top = `${y}px`;
+  selectedPiece.style.transform = "none";
+
+  updateJigsawState();
+  deselectPiece();
 }
 
 function selectPiece(piece) {
-    if (selectedPiece) deselectPiece();
-    selectedPiece = piece;
-    piece.classList.add("selected");
+  if (selectedPiece) deselectPiece();
+  selectedPiece = piece;
+  piece.classList.add("selected");
 }
 
 function deselectPiece() {
-    if (selectedPiece) {
-        selectedPiece.classList.remove("selected");
-        selectedPiece = null;
-    }
+  if (selectedPiece) {
+    selectedPiece.classList.remove("selected");
+    selectedPiece = null;
+  }
 }
 
 function performSwap(pieceA, pieceB) {
   // Swap pieceA (selected) with pieceB (clicked target)
-  
+
   // Logic mostly mirrors handleDrop swap but cleaner
   const parentA = pieceA.parentNode;
   const parentB = pieceB.parentNode;
-  
+
   const isSlotA = parentA.classList.contains("jigsaw-slot");
   const isSlotB = parentB.classList.contains("jigsaw-slot");
-  
+
   // Positional Data for restoring positions if swapping to/from pool
   const styleA_left = pieceA.style.left;
   const styleA_top = pieceA.style.top;
   const styleA_pos = pieceA.style.position;
-  
+
   const styleB_left = pieceB.style.left;
   const styleB_top = pieceB.style.top;
   const styleB_pos = pieceB.style.position;
-  
+
   // Move A to Parent B
   parentB.appendChild(pieceA);
   if (isSlotB) {
-      pieceA.style.position = "static";
-      pieceA.style.left = "";
-      pieceA.style.top = "";
+    pieceA.style.position = "static";
+    pieceA.style.left = "";
+    pieceA.style.top = "";
   } else {
-      pieceA.style.position = styleB_pos;
-      pieceA.style.left = styleB_left;
-      pieceA.style.top = styleB_top;
+    pieceA.style.position = styleB_pos;
+    pieceA.style.left = styleB_left;
+    pieceA.style.top = styleB_top;
   }
-  
+
   // Move B to Parent A
   parentA.appendChild(pieceB);
   if (isSlotA) {
-      pieceB.style.position = "static";
-      pieceB.style.left = "";
-      pieceB.style.top = "";
+    pieceB.style.position = "static";
+    pieceB.style.left = "";
+    pieceB.style.top = "";
   } else {
-      pieceB.style.position = styleA_pos;
-      pieceB.style.left = styleA_left;
-      pieceB.style.top = styleA_top;
+    pieceB.style.position = styleA_pos;
+    pieceB.style.left = styleA_left;
+    pieceB.style.top = styleA_top;
   }
-  
+
   checkJigsawCompletion();
   deselectPiece();
 }
 
 function moveToWrapper(piece) {
-    const container = document.querySelector(".jigsaw-pools-wrapper");
-    container.appendChild(piece);
-    piece.style.position = "absolute";
-    // Place randomly on left to ensure visibility
-    piece.style.left = "5%";
-    piece.style.top = `${10 + Math.random() * 60}%`;
+  const container = document.querySelector(".jigsaw-pools-wrapper");
+  container.appendChild(piece);
+  piece.style.position = "absolute";
+  // Place randomly on left to ensure visibility
+  piece.style.left = "5%";
+  piece.style.top = `${10 + Math.random() * 60}%`;
 }
 
 function updateJigsawState() {
@@ -936,9 +1036,9 @@ function checkJigsawCompletion() {
       // Animation: Fuse pieces
       const dropZone = mainBoard;
       dropZone.classList.add("jigsaw-completed");
-      
+
       // Wait for fusion animation then transition
-      setTimeout(() => transitionToSudoku(), 1500); 
+      setTimeout(() => transitionToSudoku(), 1500);
     } else {
       console.log("Jigsaw filled but incorrect.");
       instructionText.innerText =
@@ -960,16 +1060,17 @@ function transitionToSudoku() {
   jigsawStage.classList.remove("active");
 
   sudokuStage.classList.remove("hidden");
-  
+
   // Clean mainBoard from Jigsaw classes
   mainBoard.classList.remove("drop-zone", "jigsaw-completed");
   mainBoard.classList.add("sudoku-container");
 
   // Render Sudoku (Rebuilds flat grid)
   renderSudokuBoard();
-  
+
   setTimeout(() => {
-     sudokuStage.classList.add("active");
+    sudokuStage.classList.add("active");
+    resizeGame();
   }, 50);
 }
 
@@ -1081,21 +1182,25 @@ function checkSudokuSolution() {
 function transitionToPeaks() {
   gameState.currentStage = 3;
   const subtitle = document.getElementById("game-subtitle");
-  if(subtitle) subtitle.innerText = "Picos y Valles";
-  instructionText.innerText = "¡Picos y Valles! Encuentra los números mayores o menores que sus vecinos. (Solo horizontales y verticales)";
+  if (subtitle) subtitle.innerText = "Picos y Valles";
+  instructionText.innerText =
+    "¡Picos y Valles! Encuentra los números mayores o menores que sus vecinos. (Solo horizontales y verticales)";
   instructionText.style.color = "#fff";
 
   sudokuStage.classList.add("hidden");
   sudokuStage.classList.remove("active");
 
   peaksStage.classList.remove("hidden");
-  setTimeout(() => peaksStage.classList.add("active"), 50);
+  setTimeout(() => {
+    peaksStage.classList.add("active");
+    resizeGame();
+  }, 50);
 
   // Switch Main Board Mode
   mainBoard.classList.remove("sudoku-container");
   mainBoard.classList.add("sudoku-container"); // Reuse grid style
   // Maybe add specific peaks class if needed for global styling overrides
-  
+
   initPeaksGame();
 }
 
@@ -1104,21 +1209,21 @@ function transitionToPeaks() {
 function initPeaksGame() {
   const board = mainBoard;
   board.innerHTML = "";
-  
+
   gameState.peaksTargets = identifyPeaksAndValleys();
   gameState.peaksFound = 0;
-  
+
   updatePeaksCount();
 
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
       const cell = document.createElement("div");
       // Reuse basic styling but add specific class
-      cell.className = "sudoku-cell peaks-cell"; 
+      cell.className = "sudoku-cell peaks-cell";
       cell.textContent = gameState.sudokuSolution[r][c]; // Show full solution
       cell.dataset.r = r;
       cell.dataset.c = c;
-      
+
       cell.addEventListener("click", handlePeakClick);
       board.appendChild(cell);
     }
@@ -1128,15 +1233,18 @@ function initPeaksGame() {
 function identifyPeaksAndValleys() {
   const grid = gameState.sudokuSolution;
   const targets = [];
-  
+
   const directions = [
-    [-1, 0], [1, 0], [0, -1], [0, 1]
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
   ];
 
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
       const val = grid[r][c];
-      
+
       // Rule: Ignore 1 and 9
       if (val === 1 || val === 9) continue;
 
@@ -1151,8 +1259,8 @@ function identifyPeaksAndValleys() {
 
       if (neighbors.length === 0) continue; // Should not happen in 9x9
 
-      const isPeak = neighbors.every(n => val > n);
-      const isValley = neighbors.every(n => val < n);
+      const isPeak = neighbors.every((n) => val > n);
+      const isValley = neighbors.every((n) => val < n);
 
       if (isPeak || isValley) {
         targets.push({ r, c });
@@ -1164,19 +1272,19 @@ function identifyPeaksAndValleys() {
 
 function handlePeakClick() {
   if (this.classList.contains("found")) return;
-  
+
   const r = parseInt(this.dataset.r);
   const c = parseInt(this.dataset.c);
-  
+
   // Check if valid target
-  const isTarget = gameState.peaksTargets.some(t => t.r === r && t.c === c);
-  
+  const isTarget = gameState.peaksTargets.some((t) => t.r === r && t.c === c);
+
   if (isTarget) {
     this.classList.add("found");
     this.classList.add("cracked"); // Add Crack Visual
     gameState.peaksFound++;
     updatePeaksCount();
-    
+
     if (gameState.peaksFound === gameState.peaksTargets.length) {
       setTimeout(transitionToNumberSearch, 1000);
     }
@@ -1197,7 +1305,7 @@ function updatePeaksCount() {
 function transitionToNumberSearch() {
   gameState.currentStage = 4;
   updateGameSubtitle("Sopa de números");
-  
+
   instructionText.innerText =
     "¡Juego de Agudeza! Encuentra las secuencias numéricas ocultas en el tablero.";
   instructionText.style.color = "#fff";
@@ -1206,7 +1314,10 @@ function transitionToNumberSearch() {
   peaksStage.classList.remove("active");
 
   searchStage.classList.remove("hidden");
-  setTimeout(() => searchStage.classList.add("active"), 50);
+  setTimeout(() => {
+    searchStage.classList.add("active");
+    resizeGame();
+  }, 50);
 
   // Switch Main Board Mode
   mainBoard.classList.remove("sudoku-container"); // Remove Peaks/Sudoku style
@@ -1225,15 +1336,15 @@ function generateSearchTargets() {
   const grid = gameState.sudokuSolution;
   const potentialTargets = [];
   const directions = [
-    [0, 1],  // Horizontal
-    [1, 0],  // Vertical
-    [1, 1],  // Diagonal \
-    [1, -1]  // Diagonal /
+    [0, 1], // Horizontal
+    [1, 0], // Vertical
+    [1, 1], // Diagonal \
+    [1, -1], // Diagonal /
   ];
 
   // Blocked Set: Peaks & Valleys (Cracked Cells)
   const blockedSet = new Set();
-  gameState.peaksTargets.forEach(t => blockedSet.add(`${t.r},${t.c}`));
+  gameState.peaksTargets.forEach((t) => blockedSet.add(`${t.r},${t.c}`));
 
   // Attempt to find sequences of length 3 to 4 (User requested 3-4, reduced max 5)
   for (let r = 0; r < 9; r++) {
@@ -1245,16 +1356,16 @@ function generateSearchTargets() {
         for (let k = 0; k < 4; k++) {
           const nr = r + dr * k;
           const nc = c + dc * k;
-          
+
           if (nr >= 0 && nr < 9 && nc >= 0 && nc < 9) {
             // CRITICAL: Check if cell is cracked
             if (blockedSet.has(`${nr},${nc}`)) {
-               break; // Sequence broken by crack, stop extending
+              break; // Sequence broken by crack, stop extending
             }
 
             seq += grid[nr][nc];
             path.push({ r: nr, c: nc });
-            
+
             if (seq.length >= 3) {
               potentialTargets.push({ sequence: seq, path: [...path] });
             }
@@ -1270,7 +1381,7 @@ function generateSearchTargets() {
   potentialTargets.sort(() => Math.random() - 0.5);
   const selected = [];
   const seenStr = new Set();
-  
+
   for (const t of potentialTargets) {
     if (selected.length >= 5) break;
     if (!seenStr.has(t.sequence)) {
@@ -1282,15 +1393,19 @@ function generateSearchTargets() {
   // Fallback if not enough targets found (should contain at least some, if not, maybe relax length?)
   // Given 81 cells and ~20 peaks, 60 cells free, should be fine.
 
-  gameState.searchTargets = selected.map((t, idx) => ({ ...t, id: idx, found: false }));
+  gameState.searchTargets = selected.map((t, idx) => ({
+    ...t,
+    id: idx,
+    found: false,
+  }));
   gameState.foundTargets = [];
 }
 
 function renderSearchTargets() {
   const container = document.getElementById("search-targets");
   container.innerHTML = "";
-  
-  gameState.searchTargets.forEach(t => {
+
+  gameState.searchTargets.forEach((t) => {
     const el = document.createElement("div");
     el.className = `target-item ${t.found ? "done" : ""}`;
     el.textContent = t.sequence;
@@ -1305,7 +1420,7 @@ function renderSearchBoard() {
   // Create blocked set for fast lookup
   const blockedSet = new Set();
   if (gameState.peaksTargets) {
-    gameState.peaksTargets.forEach(t => blockedSet.add(`${t.r},${t.c}`));
+    gameState.peaksTargets.forEach((t) => blockedSet.add(`${t.r},${t.c}`));
   }
 
   for (let r = 0; r < 9; r++) {
@@ -1313,22 +1428,22 @@ function renderSearchBoard() {
       const cell = document.createElement("div");
       // MANTENEMOS la clase sudoku-cell para que el tablero se vea IDÉNTICO
       // Agregamos 'search-mode' por si necesitamos overrides especificos de cursor/interaccion
-      cell.className = "sudoku-cell search-mode"; 
-      
+      cell.className = "sudoku-cell search-mode";
+
       // Persist Visual Cracks
       if (blockedSet.has(`${r},${c}`)) {
-          cell.classList.add("cracked");
+        cell.classList.add("cracked");
       }
-      
+
       cell.dataset.r = r;
       cell.dataset.c = c;
       cell.textContent = gameState.sudokuSolution[r][c];
-      
+
       // Events for drag selection
       cell.addEventListener("mousedown", handleSearchStart);
       cell.addEventListener("mousemove", handleSearchMove);
       cell.addEventListener("mouseup", handleSearchEnd);
-      
+
       board.appendChild(cell);
     }
   }
@@ -1346,28 +1461,33 @@ function handleSearchStart(e) {
 
   gameState.isSelecting = true;
   gameState.selectionPath = [];
-  
+
   const r = parseInt(this.dataset.r);
   const c = parseInt(this.dataset.c);
   gameState.selectionStart = { r, c };
-  
+
   updateSelectionPath(r, c);
 }
 
 function handleSearchMove(e) {
   if (!gameState.isSelecting) return;
-  
+
   // Calculate position within cell to avoid corner-triggering
   const rect = this.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
   const w = rect.width;
   const h = rect.height;
-  
+
   // Margin of error (e.g., 20% from each side)
   const margin = 0.2;
-  
-  if (x < w * margin || x > w * (1 - margin) || y < h * margin || y > h * (1 - margin)) {
+
+  if (
+    x < w * margin ||
+    x > w * (1 - margin) ||
+    y < h * margin ||
+    y > h * (1 - margin)
+  ) {
     return; // Ignore if too close to edge
   }
 
@@ -1384,7 +1504,7 @@ function updateSelectionPath(currentR, currentC) {
   // Determine direction
   // Snap to closest valid direction (Horizontal, Vertical, Diagonal)
   // Directions: [0,1], [0,-1], [1,0], [-1,0], [1,1], [-1,-1], [1,-1], [-1,1]
-  
+
   let stepR = 0;
   let stepC = 0;
 
@@ -1401,27 +1521,27 @@ function updateSelectionPath(currentR, currentC) {
   } else {
     // Diagonal attempt (if roughly 1:1 ratio)
     // Relax logic: if diffs are roughly equal, treat as diagonal
-    // Or just strictly enforce based on larger diff? 
+    // Or just strictly enforce based on larger diff?
     // Let's enforce 1:1.
     // Ideally user drags naturally.
     stepR = Math.sign(dr);
     stepC = Math.sign(dc);
   }
-  
+
   // Create path from start to projected end
   // We project "distance" based on the dominant axis magnitude?
   // Let's iterate from start until we hit or pass currentR/currentC
-  
+
   const path = [];
-  
+
   // Distance
   const dist = Math.max(Math.abs(dr), Math.abs(dc));
-  
+
   // Re-build path
   for (let k = 0; k <= dist; k++) {
     const nr = start.r + stepR * k;
     const nc = start.c + stepC * k;
-    
+
     // Bounds check
     if (nr >= 0 && nr < 9 && nc >= 0 && nc < 9) {
       path.push({ r: nr, c: nc });
@@ -1430,19 +1550,24 @@ function updateSelectionPath(currentR, currentC) {
 
   // Update State
   gameState.selectionPath = path;
-  
+
   // Update Visuals
   renderSelectionVisuals();
 }
 
 function renderSelectionVisuals() {
   // Clear all "selected" (but not "found")
-  document.querySelectorAll(".sudoku-cell.selected").forEach(el => el.classList.remove("selected"));
-  
-  gameState.selectionPath.forEach(p => {
-    const cell = document.querySelector(`.sudoku-cell[data-r='${p.r}'][data-c='${p.c}']`);
-    if (cell && !cell.classList.contains("found")) { // Keep found green
-       cell.classList.add("selected");
+  document
+    .querySelectorAll(".sudoku-cell.selected")
+    .forEach((el) => el.classList.remove("selected"));
+
+  gameState.selectionPath.forEach((p) => {
+    const cell = document.querySelector(
+      `.sudoku-cell[data-r='${p.r}'][data-c='${p.c}']`,
+    );
+    if (cell && !cell.classList.contains("found")) {
+      // Keep found green
+      cell.classList.add("selected");
     }
   });
 }
@@ -1450,18 +1575,18 @@ function renderSelectionVisuals() {
 function handleSearchEnd() {
   if (!gameState.isSelecting) return;
   gameState.isSelecting = false;
-  
+
   validateSelection();
-  
+
   // Clear selection path
   gameState.selectionPath = [];
-  renderSelectionVisuals(); 
+  renderSelectionVisuals();
 }
 
 function validateSelection() {
   // Construct string
   let seq = "";
-  gameState.selectionPath.forEach(p => {
+  gameState.selectionPath.forEach((p) => {
     seq += gameState.sudokuSolution[p.r][p.c];
   });
 
@@ -1469,44 +1594,48 @@ function validateSelection() {
   // Also check reverse? Usually yes.
   const seqRev = seq.split("").reverse().join("");
 
-  const match = gameState.searchTargets.find(t => !t.found && (t.sequence === seq || t.sequence === seqRev));
+  const match = gameState.searchTargets.find(
+    (t) => !t.found && (t.sequence === seq || t.sequence === seqRev),
+  );
 
   if (match) {
     match.found = true;
     gameState.foundTargets.push(match.id);
-    
+
     // Mark cells as found permanently
     // But which cells? The ones in the path.
-    gameState.selectionPath.forEach(p => {
+    gameState.selectionPath.forEach((p) => {
       // Use sudoku-cell instead of search-cell since we unified the classes
-      const cell = document.querySelector(`.sudoku-cell[data-r='${p.r}'][data-c='${p.c}']`);
+      const cell = document.querySelector(
+        `.sudoku-cell[data-r='${p.r}'][data-c='${p.c}']`,
+      );
       if (cell) {
-         cell.classList.add("found");
-         // Also clear selection style immediately so it turns green
-         cell.classList.remove("selected");
+        cell.classList.add("found");
+        // Also clear selection style immediately so it turns green
+        cell.classList.remove("selected");
       }
     });
-    
+
     renderSearchTargets();
-    
+
     if (gameState.foundTargets.length === gameState.searchTargets.length) {
       setTimeout(showWinScreen, 500);
     }
   }
 }
 
-
-
 function showWinScreen() {
   searchStage.classList.add("hidden");
   searchStage.classList.remove("active");
 
   winScreen.classList.remove("hidden");
-  setTimeout(() => winScreen.classList.add("active"), 50);
+  setTimeout(() => {
+    winScreen.classList.add("active");
+    resizeGame();
+  }, 50);
 
   instructionText.innerText = "¡JUEGO COMPLETADO!";
 }
-
 
 // Start
 initGame();
@@ -1537,60 +1666,69 @@ function giveHint() {
 function giveMemoryHint() {
   // Briefly flip a pair of un-matched matching cards
   if (gameState.isLocked) return;
-  
+
   // Find a pair that is not found yet
   // We can just iterate over 0-8 pieces and see if matched
   let availablePieceId = -1;
-  
+
   // Simple: find all unmatched cards
-  const unmatchedCards = Array.from(document.querySelectorAll(".memory-card:not(.matched)"));
+  const unmatchedCards = Array.from(
+    document.querySelectorAll(".memory-card:not(.matched)"),
+  );
   if (unmatchedCards.length < 2) return;
-  
+
   // Pick one random card
-  const card1 = unmatchedCards[Math.floor(Math.random() * unmatchedCards.length)];
+  const card1 =
+    unmatchedCards[Math.floor(Math.random() * unmatchedCards.length)];
   const pieceId = card1.dataset.pieceId;
-  
+
   // Find its pair
-  const card2 = unmatchedCards.find(c => c !== card1 && c.dataset.pieceId === pieceId);
-  
+  const card2 = unmatchedCards.find(
+    (c) => c !== card1 && c.dataset.pieceId === pieceId,
+  );
+
   if (card2) {
     // Show them
     if (!card1.classList.contains("flipped")) card1.classList.add("flipped");
     if (!card2.classList.contains("flipped")) card2.classList.add("flipped");
-    
+
     gameState.isLocked = true;
     setTimeout(() => {
-       // Only un-flip if they weren't matched during the hint (unlikely since we locked)
-       // But wait, if they are flipped they are technically "open" for click if we didn't add them to state?
-       // Let's just visual peeking.
-       card1.classList.remove("flipped");
-       card2.classList.remove("flipped");
-       gameState.isLocked = false;
+      // Only un-flip if they weren't matched during the hint (unlikely since we locked)
+      // But wait, if they are flipped they are technically "open" for click if we didn't add them to state?
+      // Let's just visual peeking.
+      card1.classList.remove("flipped");
+      card2.classList.remove("flipped");
+      gameState.isLocked = false;
     }, 1000);
   }
 }
 
 function givePeaksHint() {
-  const targets = gameState.peaksTargets.filter(t => {
+  const targets = gameState.peaksTargets.filter((t) => {
     // Check if not already found (DOM check or state check)
     // Actually we only track found count, not specific ones in state array?
     // Wait, we don't track which ones are found in state, just the count.
     // We rely on DOM class 'found'.
-    const cell = document.querySelector(`.peaks-cell[data-r='${t.r}'][data-c='${t.c}']`);
+    const cell = document.querySelector(
+      `.peaks-cell[data-r='${t.r}'][data-c='${t.c}']`,
+    );
     return cell && !cell.classList.contains("found");
   });
 
   if (targets.length > 0) {
     const target = targets[Math.floor(Math.random() * targets.length)];
-    const cell = document.querySelector(`.peaks-cell[data-r='${target.r}'][data-c='${target.c}']`);
-    
+    const cell = document.querySelector(
+      `.peaks-cell[data-r='${target.r}'][data-c='${target.c}']`,
+    );
+
     if (cell) {
       cell.style.background = "#fdcb6e"; // flash
       setTimeout(() => {
         if (!cell.classList.contains("found")) {
-           cell.style.background = ""; 
+          cell.style.background = "";
         } else {
-           cell.style.background = ""; // Reset inline so class takes over
+          cell.style.background = ""; // Reset inline so class takes over
         }
       }, 1000);
     }
@@ -1605,15 +1743,15 @@ function giveJigsawHint() {
   // We prefer showing an error over a hint if both exist.
   for (let i = 0; i < 9; i++) {
     const currentPieceId = gameState.jigsawCorrectness[i];
-    
+
     // If there is a piece (not null) AND it is wrong (id != i)
     if (currentPieceId !== null && currentPieceId !== i) {
       const slot = slots[i];
       if (slot.firstChild) {
-         const piece = slot.firstChild;
-         piece.classList.add("error-highlight"); // Red shake
-         setTimeout(() => piece.classList.remove("error-highlight"), 1500);
-         foundError = true;
+        const piece = slot.firstChild;
+        piece.classList.add("error-highlight"); // Red shake
+        setTimeout(() => piece.classList.remove("error-highlight"), 1500);
+        foundError = true;
       }
       break; // Only show one error at a time
     }
@@ -1634,19 +1772,21 @@ function giveJigsawHint() {
   if (emptySlotIndex !== -1) {
     // Find the piece that belongs here
     const allPieces = [...document.querySelectorAll(".jigsaw-piece")];
-    const targetPiece = allPieces.find(p => parseInt(p.dataset.blockId) === emptySlotIndex);
-    
+    const targetPiece = allPieces.find(
+      (p) => parseInt(p.dataset.blockId) === emptySlotIndex,
+    );
+
     if (targetPiece) {
       // Highlight it visually (e.g. Yellow/Gold) to suggest "Use this one next"
       // We reuse a similar animation or style but different color?
       // Let's stick a simple transform or border.
-      // Or just reuse error-highlight but with different color? 
+      // Or just reuse error-highlight but with different color?
       // User asked for "mark wrong pieces". For hints, let's make it distinct.
-      
+
       targetPiece.style.boxShadow = "0 0 15px 5px #fdcb6e";
       targetPiece.style.transform = "scale(1.1)";
       targetPiece.style.zIndex = "100";
-      
+
       setTimeout(() => {
         targetPiece.style.boxShadow = "";
         targetPiece.style.transform = "";
@@ -1660,7 +1800,7 @@ function giveSudokuHint() {
   const cells = document.querySelectorAll(".sudoku-cell:not(.fixed)");
   const candidates = [];
 
-  cells.forEach(cell => {
+  cells.forEach((cell) => {
     const r = parseInt(cell.dataset.row);
     const c = parseInt(cell.dataset.col);
     const currentVal = parseInt(cell.textContent) || 0;
@@ -1675,7 +1815,7 @@ function giveSudokuHint() {
   if (candidates.length > 0) {
     const idx = Math.floor(Math.random() * candidates.length);
     const hint = candidates[idx];
-    
+
     hint.cell.textContent = hint.correctVal;
     hint.cell.classList.add("fixed"); // Make it permanent/correct looking
     hint.cell.classList.remove("error");
@@ -1685,19 +1825,21 @@ function giveSudokuHint() {
 
 function giveSearchHint() {
   // Find an unfound target
-  const target = gameState.searchTargets.find(t => !t.found);
+  const target = gameState.searchTargets.find((t) => !t.found);
   if (!target) return;
 
   // Flash the starting cell of this target
   const start = target.path[0];
-  const cell = document.querySelector(`.search-cell[data-r='${start.r}'][data-c='${start.c}']`);
-  
+  const cell = document.querySelector(
+    `.search-cell[data-r='${start.r}'][data-c='${start.c}']`,
+  );
+
   if (cell) {
     // Simple visual flash
     const originalBg = cell.style.background;
     cell.style.background = "#fdcb6e"; // Accent
     setTimeout(() => {
-     cell.style.background = "";
+      cell.style.background = "";
     }, 1000);
   }
 }

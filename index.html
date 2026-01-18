@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -15,89 +15,91 @@
   <body>
     <div class="background-animation"></div>
 
-    <div class="game-container">
-      <header>
-        <h1>Sudo Shards</h1>
-        <h2 id="game-subtitle" class="game-subtitle">Memotest</h2>
-        <p id="instruction-text">
-          Arma el rompecabezas para revelar el tablero.
-        </p>
-        <button
-          id="hint-btn"
-          class="btn-primary"
-          style="margin: 10px auto; display: block"
-        >
-          💡 Ayuda
-        </button>
-      </header>
+    <div id="game-scaler">
+      <div class="game-container">
+        <header>
+          <h1>Sudo Shards</h1>
+        </header>
 
-      <div id="game-area" class="glass-panel">
-        <!-- Persistent Board (Transforming Object) -->
-        <div id="main-board" class="board-common"></div>
+        <div id="game-area" class="glass-panel">
+          <!-- New Internal Header with Subtitle & Info -->
+          <div class="panel-header">
+            <h2 id="game-subtitle" class="game-subtitle">Memotest</h2>
+            <div id="info-trigger" class="info-icon">i</div>
 
-        <!-- Stage 1: Memory Game -->
-        <div id="memory-stage" class="stage active">
-          <div class="memory-layout">
-            <div class="memory-board" id="memory-board"></div>
-            <!-- Collected container replaced by main-board -->
+            <!-- Tooltip Container (Hidden by default) -->
+            <div id="info-tooltip" class="info-tooltip hidden-tooltip">
+              <p id="instruction-text">
+                Arma el rompecabezas para revelar el tablero.
+              </p>
+            </div>
           </div>
-        </div>
 
-        <!-- Stage 2: Jigsaw -->
-        <div id="jigsaw-stage" class="stage hidden">
-          <div class="jigsaw-pools-wrapper">
-            <div id="pool-left" class="side-pool"></div>
-            <div id="pool-right" class="side-pool"></div>
-          </div>
-        </div>
+          <button id="hint-btn" class="btn-primary btn-hint">💡 Ayuda</button>
 
-        <!-- Stage 3: Sudoku -->
-        <div id="sudoku-stage" class="stage hidden">
-          <!-- Board replaced by main-board -->
-          <div class="sudoku-controls">
-            <button id="check-sudoku" class="btn-primary">
-              Verificar Sudoku
-            </button>
-            <div class="number-pad" id="numpad"></div>
-          </div>
-        </div>
+          <!-- Persistent Board (Transforming Object) -->
+          <div id="main-board" class="board-common"></div>
 
-        <!-- Stage 4: Peaks and Valleys -->
-        <div id="peaks-stage" class="stage hidden">
-          <div class="peaks-info">
-            <p>
-              <b>No cuentan 1 ni 9.</b>
-            </p>
-            <p>Restantes: <span id="peaks-remaining">0</span></p>
+          <!-- Stage 1: Memory Game -->
+          <div id="memory-stage" class="stage active">
+            <div class="memory-layout">
+              <div class="memory-board" id="memory-board"></div>
+              <!-- Collected container replaced by main-board -->
+            </div>
           </div>
-          <!-- Board replaced by main-board -->
-        </div>
 
-        <!-- Stage 5: Number Search -->
-        <div id="search-stage" class="stage hidden">
-          <div class="search-info">
-            <p>Encuentra estas secuencias:</p>
-            <div id="search-targets" class="targets-container"></div>
+          <!-- Stage 2: Jigsaw -->
+          <div id="jigsaw-stage" class="stage hidden">
+            <div class="jigsaw-pools-wrapper">
+              <div id="pool-left" class="side-pool"></div>
+              <div id="pool-right" class="side-pool"></div>
+            </div>
           </div>
-          <div class="search-wrapper">
+
+          <!-- Stage 3: Sudoku -->
+          <div id="sudoku-stage" class="stage hidden">
+            <!-- Board replaced by main-board -->
+            <div class="sudoku-controls">
+              <button id="check-sudoku" class="btn-primary">
+                Verificar Sudoku
+              </button>
+              <div class="number-pad" id="numpad"></div>
+            </div>
+          </div>
+
+          <!-- Stage 4: Peaks and Valleys -->
+          <div id="peaks-stage" class="stage hidden">
+            <div class="peaks-info">
+              <p>
+                <b>No cuentan 1 ni 9.</b>
+              </p>
+              <p>Restantes: <span id="peaks-remaining">0</span></p>
+            </div>
             <!-- Board replaced by main-board -->
           </div>
-        </div>
 
-        <!-- Win Screen -->
-        <div id="win-screen" class="stage hidden">
-          <h2>¡Felicidades!</h2>
-          <p>Has completado los 5 desafíos.</p>
-          <button onclick="location.reload()" class="btn-primary">
-            Jugar de nuevo
-          </button>
+          <!-- Stage 5: Number Search -->
+          <div id="search-stage" class="stage hidden">
+            <div class="search-info">
+              <p>Encuentra estas secuencias:</p>
+              <div id="search-targets" class="targets-container"></div>
+            </div>
+            <div class="search-wrapper">
+              <!-- Board replaced by main-board -->
+            </div>
+          </div>
+
+          <!-- Win Screen -->
+          <div id="win-screen" class="stage hidden">
+            <h2>¡Felicidades!</h2>
+            <p>Has completado los 5 desafíos.</p>
+            <button onclick="location.reload()" class="btn-primary">
+              Jugar de nuevo
+            </button>
+          </div>
         </div>
       </div>
     </div>
-
-    <footer>
-      <p>Creado por Román Yakimovicz</p>
-    </footer>
 
     <script src="script.js"></script>
   </body>

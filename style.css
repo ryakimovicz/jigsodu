@@ -19,13 +19,29 @@
 body {
   font-family: "Outfit", sans-serif;
   color: var(--text-color);
-  min-height: 100vh;
+  width: 100vw;
+  height: 100dvh; /* Dynamic viewport height */
+  overflow: hidden; /* Prevent scrolling */
   display: flex;
-  flex-direction: column; /* Stack game and footer vertically */
-  justify-content: flex-start; /* Let margin:auto handle centering */
-  align-items: center;
-  overflow-y: auto;
+  flex-direction: column; /* Stack VERTICALLY */
+  justify-content: flex-start; /* FORCE TOP ALIGNMENT */
+  align-items: center; /* Center horizontally */
   background: var(--bg-gradient);
+  margin: 0;
+  padding-top: 0;
+}
+
+#game-scaler {
+  transform-origin: center top; /* Scale from top */
+  transition: transform 0.1s ease-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 1000px;
+  /* CRITICAL: No vertical margin to prevent centering/pushing down */
+  margin: 0 auto;
 }
 
 .background-animation {
@@ -52,11 +68,10 @@ body {
 }
 
 .game-container {
-  width: 95%;
-  max-width: 1000px; /* Increased to fit side pools */
+  width: 100%; /* Fill the scaler */
   text-align: center;
-  margin: auto; /* Vertically and horizontally centers in flex container */
-  padding: 20px 0; /* Add padding to prevent touching edges on small screens */
+  margin: 0 auto;
+  padding: 5px 0; /* Reduced from 20px */
 }
 
 /* ... */
@@ -109,19 +124,23 @@ body {
 }
 
 header {
-  margin-bottom: 20px;
+  margin-bottom: 5px; /* Reduced from 20px */
+  margin-top: 0;
 }
 
 h1 {
   font-size: 2.5rem;
-  margin-bottom: 10px;
+  margin-bottom: 2px; /* Reduced from 10px */
+  margin-top: 0;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .game-subtitle {
+  font-family: "Outfit", sans-serif; /* Explicitly ensure font matches */
   font-size: 1.5rem;
   margin-bottom: 5px;
-  color: #a29bfe; /* Secondary highlight color */
+  color: #ffffff; /* User requested better visibility (was #a29bfe) */
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* Add shadow for contrast against glass */
   text-transform: uppercase;
   letter-spacing: 2px;
 }
@@ -135,7 +154,7 @@ h1 {
   padding: 30px;
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
   transition: all 0.5s ease;
-  /* Fixed size for consistency across stages */
+  /* Fixed size for consistency across stages, but flexible for mobile */
   min-height: 800px;
   width: 95%; /* Responsive width */
   max-width: 1000px;
@@ -147,10 +166,32 @@ h1 {
   position: relative;
 
   /* Ensure board has space from top */
-  padding-top: 50px;
+  padding-top: 20px; /* Reduced from 50px to move subtitle up as requested */
 
   /* Force horizontal centering */
   margin: 0 auto;
+}
+
+@media (max-width: 850px) {
+  .glass-panel {
+    min-height: auto; /* Allow shrinking on mobile */
+    padding-bottom: 80px; /* Space for footer/pools */
+  }
+}
+
+/* Height-based Layout Adjustments for Laptops (e.g. 1366x768) */
+@media (max-height: 900px) {
+  .glass-panel {
+    padding-top: 20px; /* Slight bump back up so it's not too crowded */
+    padding-bottom: 20px;
+    min-height: 600px; /* Ensure it's tall enough (16:9 safe) to trigger height scaling */
+  }
+  header {
+    margin-bottom: 0;
+  }
+  h1 {
+    font-size: 2rem;
+  }
 }
 
 .stage {
@@ -913,15 +954,6 @@ h1 {
   animation: flyAway 0.8s forwards;
 }
 
-footer {
-  width: 100%;
-  padding: 20px 0;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.7);
-  text-align: center;
-  flex-shrink: 0; /* Prevent collapsing */
-}
-
 /* Very Small Screens Adjustments (e.g. iPhone SE 320px) */
 @media (max-width: 450px) {
   :root {
@@ -982,4 +1014,120 @@ footer {
     width: 20px;
     height: 20px;
   }
+}
+
+/* --- Header Refactor Styles --- */
+
+.panel-header {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center; /* Vertically align text and icon */
+  gap: 10px;
+  margin-bottom: 10px; /* Space before hint button/board */
+  position: relative; /* For tooltip positioning */
+}
+
+/* Ensure subtitle has no bottom margin to align with icon */
+.game-subtitle {
+  margin-bottom: 0;
+}
+
+/* Info Icon */
+.info-icon {
+  width: 18px; /* Reduced from 24px */
+  height: 18px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: 12px; /* Reduced from 18px to match new size */
+  font-weight: 400; /* Normal weight */
+  font-family: "Outfit", sans-serif;
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.info-icon:hover {
+  background: var(--accent-color);
+  color: #333;
+  transform: scale(1.1);
+}
+
+/* Tooltip Container */
+.info-tooltip {
+  position: absolute;
+  top: 100%; /* Below header */
+  left: 50%;
+  transform: translateX(-50%);
+
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+
+  width: max-content;
+  max-width: 80%; /* Don't overflow panel */
+  margin-top: 10px;
+  z-index: 100;
+
+  text-align: center;
+  font-size: 1rem;
+  color: #fff;
+
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+/* Tooltip Arrow */
+.info-tooltip::after {
+  content: "";
+  position: absolute;
+  bottom: 100%; /* Top of tooltip */
+  left: 50%;
+  margin-left: -8px;
+  border-width: 8px;
+  border-style: solid;
+  border-color: transparent transparent rgba(0, 0, 0, 0.8) transparent;
+}
+
+/* Hidden State */
+.hidden-tooltip {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%) translateY(-10px);
+}
+
+/* Hover Interaction (Desktop) */
+@media (hover: hover) {
+  .info-icon:hover ~ .info-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Hint Button Adjustments */
+.btn-hint {
+  margin: 0 auto 20px auto; /* Space below header, above board */
+  display: block;
+  padding: 8px 16px; /* Slightly smaller than main actions */
+  font-size: 0.9rem;
+}
+
+/* Adjusted Instruction Text */
+#instruction-text {
+  margin: 0; /* Remove default p margin inside tooltip */
+  line-height: 1.4;
 }
