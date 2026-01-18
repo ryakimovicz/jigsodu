@@ -1,6 +1,6 @@
 /* Main Menu Logic */
 
-document.addEventListener("DOMContentLoaded", () => {
+export function initMenu() {
   console.log("Jigsudo Menu Module Loaded");
 
   const menuToggle = document.getElementById("menu-toggle");
@@ -43,6 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnSettings.addEventListener("click", (e) => {
       e.stopPropagation(); // Prevent closing immediately
       settingsDropdown.classList.toggle("hidden");
+      console.log("Settings toggled via JS"); // Debug
     });
 
     // Close dropdown when clicking outside
@@ -190,4 +191,4 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-profile")?.addEventListener("click", () => {
     alert("Perfil: Próximamente");
   });
-});
+}
