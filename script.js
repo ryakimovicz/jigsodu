@@ -1674,14 +1674,16 @@ function giveHint() {
 }
 
 function giveMemoryHint() {
-  // Briefly flip a pair of un-matched matching cards
+  // Solve a pair permanently
   if (gameState.isLocked) return;
 
-  // Find a pair that is not found yet
-  // We can just iterate over 0-8 pieces and see if matched
-  let availablePieceId = -1;
+  // 1. Reset any current user interaction to avoid state conflicts
+  if (gameState.flippedCards.length > 0) {
+    gameState.flippedCards.forEach((card) => card.classList.remove("flipped"));
+    gameState.flippedCards = [];
+  }
 
-  // Simple: find all unmatched cards
+  // 2. Find a pair that is not found yet
   const unmatchedCards = Array.from(
     document.querySelectorAll(".memory-card:not(.matched)"),
   );
@@ -1698,19 +1700,15 @@ function giveMemoryHint() {
   );
 
   if (card2) {
-    // Show them
-    if (!card1.classList.contains("flipped")) card1.classList.add("flipped");
-    if (!card2.classList.contains("flipped")) card2.classList.add("flipped");
+    // 3. Mark as flipped (Visual)
+    card1.classList.add("flipped");
+    card2.classList.add("flipped");
 
-    gameState.isLocked = true;
-    setTimeout(() => {
-      // Only un-flip if they weren't matched during the hint (unlikely since we locked)
-      // But wait, if they are flipped they are technically "open" for click if we didn't add them to state?
-      // Let's just visual peeking.
-      card1.classList.remove("flipped");
-      card2.classList.remove("flipped");
-      gameState.isLocked = false;
-    }, 1000);
+    // 4. Update State
+    gameState.flippedCards = [card1, card2];
+
+    // 5. Trigger Match Logic (Solving it)
+    checkMemoryMatch();
   }
 }
 
