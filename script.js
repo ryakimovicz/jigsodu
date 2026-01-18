@@ -1,4 +1,14 @@
 // Game Configuration and State
+const DEBUG_MODE = true;
+
+// Init Debug Button visibility
+document.addEventListener("DOMContentLoaded", () => {
+  const hintBtn = document.getElementById("hint-btn");
+  if (hintBtn && !DEBUG_MODE) {
+    hintBtn.style.display = "none";
+  }
+});
+
 const gameState = {
   currentStage: 0, // 0: Memory, 1: Jigsaw, 2: Sudoku, 3: Nonogram
   // State populated by generator

@@ -1134,3 +1134,21 @@ h1 {
   margin: 0; /* Remove default p margin inside tooltip */
   line-height: 1.4;
 }
+
+/* Debug Floating Button */
+.debug-floating-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  opacity: 0.8;
+  transition:
+    opacity 0.3s,
+    transform 0.2s;
+}
+
+.debug-floating-btn:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
