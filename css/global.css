@@ -8,7 +8,7 @@
   --accent-color: #f97316; /* Burnt Orange - Selection/Highlights */
 
   /* UI Utilities */
-  --header-height: 70px;
+  --header-height: 55px; /* Shorter header as requested */
   --font-family: "Outfit", sans-serif;
 
   /* Paper Effects */
