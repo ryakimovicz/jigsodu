@@ -49,6 +49,9 @@ body.dark-mode {
   font-size: 1.5rem;
   color: var(--text-primary);
   margin: 0;
+  user-select: text; /* Allow selection of title */
+  -webkit-user-select: text;
+  cursor: text;
 }
 
 /* Main Grid Layout */
