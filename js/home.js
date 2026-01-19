@@ -186,6 +186,7 @@ export function initHome() {
   const tabs = document.querySelectorAll(".tab-btn");
   const panelDaily = document.getElementById("panel-daily");
   const panelCustom = document.getElementById("panel-custom");
+  // startBtn is already defined at line 11
   let currentMode = "daily"; // 'daily' | 'custom'
 
   tabs.forEach((tab) => {
@@ -197,15 +198,36 @@ export function initHome() {
       tab.classList.add("active");
 
       // 2. Update Panels (Deck Logic)
-      // Toggle 'active' class: Active panel gets it, others lose it.
       if (target === "daily") {
         currentMode = "daily";
         panelDaily.classList.add("active");
         panelCustom.classList.remove("active");
+
+        // Enable Start Button
+        const btn = document.getElementById("start-btn");
+        const lang = getCurrentLang();
+        if (btn) {
+          btn.dataset.i18n = "btn_start";
+          btn.textContent = translations[lang]
+            ? translations[lang].btn_start
+            : "EMPEZAR";
+          btn.disabled = false;
+        }
       } else {
         currentMode = "custom";
         panelCustom.classList.add("active");
         panelDaily.classList.remove("active");
+
+        // Disable Start Button
+        const btn = document.getElementById("start-btn");
+        const lang = getCurrentLang();
+        if (btn) {
+          btn.dataset.i18n = "btn_coming_soon";
+          btn.textContent = translations[lang]
+            ? translations[lang].btn_coming_soon
+            : "PRÓXIMAMENTE";
+          btn.disabled = true;
+        }
       }
     });
   });

@@ -12,7 +12,12 @@ function startApp() {
   initHome(); // Initialize Home Screen logic
 }
 
-startApp(); // Call the new boot sequence
+// Wait for DOM to be ready
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", startApp);
+} else {
+  startApp();
+}
 
 console.log("Main Loaded. Daily Seed:", gameManager.currentSeed);
 

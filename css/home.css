@@ -226,7 +226,8 @@ body.dark-mode .tab-btn:not(.active):hover {
   grid-area: stack; /* Occupy same space */
   background: var(--bg-paper);
   width: 100%;
-  height: auto; /* Fit content */
+  height: auto;
+  min-height: 336px; /* Enforce consistency (Daily was ~335px) */
   align-self: start; /* Align to top */
 
   /* The Deck Animation */
@@ -261,16 +262,26 @@ body.dark-mode .glass-panel {
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 10px 20px !important; /* Significantly reduce top padding */
+}
+
+.custom-content {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* Segmented Control (Difficulty) */
 .difficulty-wrapper {
-  margin-bottom: 20px;
+  margin-bottom: 15px; /* Reduce space */
   width: 100%;
   display: flex;
   justify-content: center;
 }
 
+/* ... Segmented Control styles ... */
 .segmented-control {
   display: flex;
   background: rgba(0, 0, 0, 0.05);
@@ -303,16 +314,20 @@ body.dark-mode .seg-btn.active {
   color: var(--accent-color);
 }
 
-.coming-soon-text {
-  font-style: italic;
-  color: var(--text-muted);
-  margin-bottom: 20px;
+/* Panel Titles */
+.panel-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 10px 0 8px; /* Compact margins */
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 /* Switch List - Grid Layout */
 .game-switches-list {
   width: 100%;
-  max-width: 600px; /* Contain width */
+  max-width: 100%; /* Allow full width of panel */
   display: grid;
   grid-template-columns: 1fr 1fr; /* Two columns */
   gap: 15px;
@@ -325,16 +340,17 @@ body.dark-mode .seg-btn.active {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 15px;
+  padding: 12px 20px; /* Slightly plumper rows */
   background: rgba(255, 255, 255, 0.5);
   border-radius: 8px;
   border: 1px solid var(--glass-border);
+  min-width: 0; /* Flexbox safety */
 }
 
 /* Center last item if odd number of items */
 .switch-row:last-child:nth-child(odd) {
   grid-column: 1 / -1; /* Span full width to allow centering */
-  width: calc(50% - 7.5px); /* Exactly size of 1 column (minus half gap) */
+  width: calc(50% - 7.5px); /* Exact match: 50% width minus half the 15px gap */
   max-width: none; /* Reset max-width if set */
   justify-self: center; /* Center in container */
 }
@@ -343,7 +359,7 @@ body.dark-mode .seg-btn.active {
   font-weight: 600;
   color: var(--text-main);
   white-space: nowrap; /* Prevent wrapping */
-  font-size: 0.9rem;
+  font-size: 0.95rem; /* Slightly larger text */
 }
 
 /* Mobile: Single Column */
@@ -354,7 +370,13 @@ body.dark-mode .seg-btn.active {
 
   .switch-row:last-child:nth-child(odd) {
     grid-column: auto; /* Reset span */
+    width: 100%; /* Full width on mobile to match others */
     max-width: 100%;
+  }
+
+  .panel-section-title {
+    font-size: 1rem;
+    margin: 15px 0 8px;
   }
 }
 
@@ -417,6 +439,17 @@ body.dark-mode .seg-btn.active {
   box-shadow: none; /* Pressed effect */
 }
 
+.btn-primary:disabled {
+  background: var(--glass-border) !important; /* Lighter gray */
+  color: var(--text-muted) !important;
+  box-shadow: none !important;
+  transform: translateY(4px) !important; /* Stay pressed */
+  cursor: not-allowed;
+  opacity: 1; /* Handle opacity via color */
+  pointer-events: none;
+  border: none !important; /* Ensure no border */
+}
+
 /* Dark Mode Button Overrides */
 body.dark-mode .btn-primary {
   color: #1e293b; /* Dark text on bright orange for contrast */
@@ -467,6 +500,11 @@ body.dark-mode .btn-primary:hover {
 /* Sidebar Removed */
 
 @media (max-width: 600px) {
+  /* Enforce consistency on mobile */
+  .glass-panel {
+    min-height: 457px;
+  }
+
   .app-title {
     font-size: 1.4rem;
   }
