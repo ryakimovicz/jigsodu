@@ -506,3 +506,20 @@ input:checked + .slider-small:before {
 .option-manual.disabled .theme-icon {
   filter: none;
 }
+
+/* Language Selector */
+.lang-select {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--glass-border);
+  background: var(--bg-paper);
+  color: var(--text-main);
+  font-family: var(--font-main);
+  font-size: 0.9rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.lang-select:focus {
+  border-color: var(--accent-color);
+}

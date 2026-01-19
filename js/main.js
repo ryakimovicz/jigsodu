@@ -1,10 +1,12 @@
 /* Main Entry Point */
 import { initMenu } from "./menu.js";
+import { initLanguage } from "./i18n.js";
 import { gameManager } from "./game-manager.js";
 import { CONFIG } from "./config.js";
 
-// Initialize Menu
-initMenu();
+// Initialize Modules
+initLanguage(); // Set up languages first to translate static text
+initMenu(); // Set up menu interactions
 
 console.log("Main Loaded. Daily Seed:", gameManager.currentSeed);
 

@@ -43,12 +43,22 @@
         </div>
 
         <div class="header-right">
-          <button id="btn-stats" class="btn-icon" aria-label="Estadísticas">
+          <button
+            id="btn-stats"
+            class="btn-icon"
+            aria-label="Estadísticas"
+            data-i18n-aria="header_stats_label"
+          >
             📊
           </button>
 
           <div class="settings-wrapper" style="position: relative">
-            <button id="btn-profile" class="btn-icon" aria-label="Perfil">
+            <button
+              id="btn-profile"
+              class="btn-icon"
+              aria-label="Perfil"
+              data-i18n-aria="header_profile_label"
+            >
               👤
             </button>
             <!-- Profile Dropdown -->
@@ -83,7 +93,20 @@
               </div>
 
               <div class="dropdown-divider"></div>
-              <h3 class="dropdown-header">Ajustes</h3>
+              <h3 class="dropdown-header" data-i18n="profile_settings">
+                Ajustes
+              </h3>
+
+              <!-- Language Option -->
+              <div class="setting-item">
+                <span class="setting-label" data-i18n="profile_language"
+                  >Idioma</span
+                >
+                <select id="language-select" class="lang-select">
+                  <option value="es">Español</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -92,24 +115,28 @@
       <!-- Main Menu Content -->
       <main id="menu-content" class="menu-container">
         <section class="game-description glass-panel">
-          <h2>Cinco desafíos, un solo tablero</h2>
-          <p>
+          <h2 data-i18n="menu_title">Cinco desafíos, un solo tablero</h2>
+          <p data-i18n-html="menu_description_html">
             Todo empieza con el <strong>Juego de Memoria</strong>: encuentra los
             pares, consigue las piezas y arma el <strong>Rompecabezas</strong>.
             Solo así podrás enfrentar al <strong>Sudoku</strong>, superar los
             <strong>Picos y Valles</strong> y encontrar las secuencias ocultas
             en la <strong>Sopa de Números</strong> final.
           </p>
-          <p class="tagline">Tu dosis diaria de números te está esperando</p>
+          <p class="tagline" data-i18n="menu_tagline">
+            Tu dosis diaria de números te está esperando
+          </p>
         </section>
 
-        <button id="start-btn" class="btn-primary">EMPEZAR</button>
+        <button id="start-btn" class="btn-primary" data-i18n="btn_start">
+          EMPEZAR
+        </button>
       </main>
 
       <!-- Footer -->
       <footer class="main-footer">
         <p>
-          © 2026 Román Yakimovicz |
+          <span data-i18n="footer_rights">© 2026 Román Yakimovicz</span> |
           <a href="https://github.com/ryakimovicz/" target="_blank">GitHub</a>
         </p>
       </footer>

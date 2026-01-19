@@ -1,7 +1,11 @@
 /* Main Menu Logic */
+import { translations } from "./translations.js";
+import { getCurrentLang } from "./i18n.js";
 
 export function initMenu() {
   console.log("Jigsudo Menu Module Loaded");
+
+  // ... (existing constants) ...
 
   const menuToggle = document.getElementById("menu-toggle");
   const sidebar = document.getElementById("sidebar");
@@ -148,21 +152,31 @@ export function initMenu() {
     if (!dateEl || !challengeEl) return;
 
     const now = new Date();
+    const lang = getCurrentLang();
+    const t = translations[lang];
+    const locale = t ? t.date_locale : "es-ES";
 
-    // Date: "domingo, 18 de enero" (default ES)
-    const dateStr = now.toLocaleDateString("es-ES", {
+    // Date
+    const dateStr = now.toLocaleDateString(locale, {
       weekday: "long",
       day: "numeric",
       month: "long",
     });
 
-    // Custom Capitalization: "Domingo, 18 de Enero"
-    // Capitalize words except "de"
-    const formattedDate = dateStr.replace(/\b\w+/g, (word) => {
-      return word === "de" || word === "en"
-        ? word
-        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    });
+    let formattedDate = dateStr;
+
+    if (lang === "es") {
+      formattedDate = dateStr.replace(/\b\w+/g, (word) => {
+        return word === "de" || word === "en" || word === "del"
+          ? word
+          : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      });
+    } else {
+      // English / Generic Title Case
+      formattedDate = dateStr.replace(/\b\w+/g, (word) => {
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      });
+    }
 
     dateEl.textContent = formattedDate;
 
@@ -181,6 +195,11 @@ export function initMenu() {
   }
 
   updateHeaderInfo();
+
+  // Listen for Language Changes to re-render date
+  window.addEventListener("languageChanged", () => {
+    updateHeaderInfo();
+  });
 
   // Placeholders for other buttons
   document.getElementById("btn-stats")?.addEventListener("click", () => {
