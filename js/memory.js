@@ -106,6 +106,21 @@ function setupCards(chunks) {
     cardsContainer.appendChild(cardEl);
     cards.push(cardEl);
   });
+
+  // Preview Phase
+  previewCards();
+}
+
+function previewCards() {
+  isLocked = true;
+  // Flip all to show content
+  cards.forEach((card) => card.classList.add("flipped"));
+
+  setTimeout(() => {
+    // Unflip all
+    cards.forEach((card) => card.classList.remove("flipped"));
+    isLocked = false;
+  }, 2000); // 2 Seconds
 }
 
 // Helper to render mini grid

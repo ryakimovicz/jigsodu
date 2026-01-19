@@ -1,4 +1,19 @@
 /* Memory Game Container */
+:root {
+  /* Swapped Colors per user request */
+  /* Light Mode wants Dark Mode's "Pearl Grey" */
+  --card-grad-1: #cdd9e5;
+  --card-grad-2: #adbac7;
+  --card-text: #1e293b; /* Dark text needed for light background */
+}
+
+body.dark-mode {
+  /* Dark Mode wants Light Mode's "Slate Blue" */
+  --card-grad-1: #64748b;
+  --card-grad-2: #475569;
+  --card-text: #ffffff;
+}
+
 #memory-game {
   width: 100%;
   height: 100%;
@@ -9,6 +24,8 @@
   padding-top: calc(var(--header-height) + 1rem); /* Clear fixed header */
   box-sizing: border-box;
   animation: fadeIn 0.5s ease-in-out;
+  user-select: none; /* Global disable for game area */
+  -webkit-user-select: none;
 }
 
 @keyframes fadeIn {
@@ -39,7 +56,7 @@
   display: grid;
   width: 100%;
   max-width: 1200px;
-  grid-template-columns: 80px 320px 80px; /* Fixed side width for columns */
+  grid-template-columns: 100px 320px 100px; /* Fixed side width for columns (wider for larger pieces) */
   grid-template-rows: auto auto;
   grid-template-areas:
     "left board right"
@@ -96,6 +113,8 @@
   border-radius: 8px;
   width: 300px;
   height: 300px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .sudoku-chunk-slot {
@@ -116,17 +135,31 @@
 
 /* Card Styling */
 .memory-card {
-  width: 60px; /* Aspect ratio fit? */
-  height: 60px;
+  width: 85px; /* Aspect ratio fit? */
+  height: 85px;
   position: relative;
   cursor: pointer;
   transform-style: preserve-3d;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.2s ease-out,
+    box-shadow 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
+.memory-card:hover {
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+/* Maintain flip rotation even on hover if flipped */
 .memory-card.flipped {
   transform: rotateY(180deg);
   cursor: default;
+}
+/* Ensure hover doesn't override the flip rotation visually in a weird way */
+.memory-card.flipped:hover {
+  transform: rotateY(180deg) scale(1); /* No scale on flipped/matched cards if preferred, checking user intent */
 }
 
 .memory-card-inner {
@@ -152,12 +185,8 @@
 }
 
 .memory-card-front {
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--primary-hover)
-  );
-  color: white;
+  background: linear-gradient(135deg, var(--card-grad-1), var(--card-grad-2));
+  color: var(--card-text);
   font-size: 1.5rem;
   font-weight: bold;
 }
@@ -167,6 +196,14 @@
   transform: rotateY(180deg);
   border: 2px solid var(--primary-color);
   padding: 1px;
+  /* Fix ghost text selection: Hide content when not flipped */
+  visibility: hidden;
+  transition: visibility 0s linear 0.1s; /* Delay hiding until almost flipped back */
+}
+
+.memory-card.flipped .memory-card-back {
+  visibility: visible;
+  transition-delay: 0s; /* Show immediately when starting calculation */
 }
 
 /* Mini Sudoku Grid Content */
@@ -185,23 +222,33 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 8px; /* Very small font for mini representation */
+  font-size: 14px; /* Larger font for legibility */
+  font-weight: 600;
   font-family: "Outfit", sans-serif;
   color: #333;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .dark-mode .mini-cell {
   background: #2a2a2a;
   color: #eee;
 }
 
+/* Specific: Larger numbers on the main board */
+.memory-board .mini-cell {
+  font-size: 16px;
+}
+
 /* Collected Piece Styling */
 .collected-piece {
-  width: 60px;
-  height: 60px;
+  width: 70px; /* Slightly larger collected pieces */
+  height: 70px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   overflow: hidden;
   animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 @keyframes popIn {
@@ -251,13 +298,13 @@
   }
 
   .memory-card {
-    width: 18vw;
-    height: 18vw;
-    max-width: 70px;
-    max-height: 70px;
+    width: 22vw;
+    height: 22vw;
+    max-width: 90px;
+    max-height: 90px;
   }
 
   .mini-cell {
-    font-size: 8px;
+    font-size: 12px;
   }
 }
