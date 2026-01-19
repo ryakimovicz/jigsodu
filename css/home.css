@@ -96,12 +96,12 @@ body.dark-mode .main-header {
 }
 
 .btn-icon {
-  font-size: 1.5rem;
-  padding: 8px;
+  font-size: 1.2rem;
+  padding: 6px;
   border-radius: 50%;
   transition: all 0.2s;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -120,20 +120,30 @@ body.dark-mode .main-header {
 }
 
 /* Menu Content Container */
+/* Menu Content Container - SAFE ZONE */
 .menu-container {
-  flex: 1;
+  /* Position safely between Header and Footer */
+  margin-top: var(--header-height);
+  height: calc(100dvh - var(--header-height) - var(--footer-height));
+  min-height: 0; /* Allow flex shrinking if necessary */
+
+  /* Centering Logic */
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: center; /* Vertically center content in safe zone */
   align-items: center;
-  padding: 100px 20px 60px; /* Top padding for fixed header */
-  gap: 40px;
+
+  padding: 0 20px; /* Horizontal padding only */
+  gap: 20px;
   width: 100%;
   max-width: 800px;
-  margin: 0 auto;
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
+
+  /* Ensure content doesn't overflow without scrolling if screen is weirdly small */
+  overflow-y: auto;
+  /* Hide scrollbar for cleaner look if content fits */
+  scrollbar-width: none;
 }
 
 /* Wrapper for Tabs + Panels to bypass menu-container gap */
@@ -159,7 +169,7 @@ body.dark-mode .main-header {
 
 .tab-btn {
   padding: 12px 24px;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.05); /* Darker inactive state (Light Mode) */
   border: 1px solid transparent; /* Match glass border eventually */
   border-bottom: none;
   border-radius: 12px 12px 0 0;
@@ -181,22 +191,23 @@ body.dark-mode .main-header {
 }
 
 .tab-btn:hover {
-  background: rgba(255, 255, 255, 0.6);
-  color: var(--primary-color);
+  background: rgba(0, 0, 0, 0.1); /* Slightly darker on hover */
+  color: var(--text-main);
 }
 
 /* Dark Mode Inactive Tab Fix */
 body.dark-mode .tab-btn:not(.active) {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2); /* Darker inactive state (Dark Mode) */
   color: var(--text-muted);
+  box-shadow: inset 0 -5px 10px rgba(0, 0, 0, 0.2);
 }
 body.dark-mode .tab-btn:not(.active):hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.3);
   color: var(--text-main);
 }
 
 .tab-btn.active {
-  background: var(--bg-paper); /* Match panel background */
+  background: var(--bg-paper); /* Match panel background (Light Mode) */
   color: var(--primary-color);
   z-index: 20; /* Ensure it is ABOVE panel */
   border: 1px solid var(--glass-border);
@@ -207,6 +218,13 @@ body.dark-mode .tab-btn:not(.active):hover {
 
   /* Rise up to meet the active panel */
   transform: translateY(0);
+}
+
+/* Dark Mode Active Tab Override */
+body.dark-mode .tab-btn.active {
+  background: #2d333b; /* Match Dark Mode Glass Panel color */
+  border-bottom-color: #2d333b;
+  color: var(--primary-color);
 }
 
 /* Panel Container - Deck Layout */
@@ -305,7 +323,7 @@ body.dark-mode .glass-panel {
 
 .seg-btn.active {
   background: white;
-  color: var(--primary-color);
+  color: var(--accent-color); /* Orange text for active state */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -341,10 +359,20 @@ body.dark-mode .seg-btn.active {
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px; /* Slightly plumper rows */
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(
+    0,
+    0,
+    0,
+    0.03
+  ); /* Light grey for contrast against cream panel */
   border-radius: 8px;
   border: 1px solid var(--glass-border);
   min-width: 0; /* Flexbox safety */
+}
+
+body.dark-mode .switch-row {
+  background: rgba(255, 255, 255, 0.05); /* Subtle glass in dark mode */
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Center last item if odd number of items */
@@ -463,12 +491,18 @@ body.dark-mode .btn-primary:hover {
 /* Footer */
 .main-footer {
   text-align: center;
-  padding: 10px; /* Reduced specific padding */
-  font-size: 0.9rem;
+  padding: 4px; /* Slim footer */
+  font-size: 0.8rem; /* Slightly smaller text */
   color: var(--text-muted);
   width: 100%;
   border-top: 1px solid var(--glass-border);
   background: var(--bg-paper);
+  /* Fixed positioning */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
 }
 
 .version-tag {
