@@ -7,6 +7,9 @@
   --text-muted: #94a3b8; /* Muted Text */
   --accent-color: #f97316; /* Burnt Orange - Selection/Highlights */
 
+  --bg-secondary: #f1f5f9; /* Light Slate - Secondary Background */
+  --bg-tertiary: #e2e8f0; /* Lighter Slate - Tertiary Background */
+
   /* UI Utilities */
   --header-height: 45px; /* Shorter header as requested */
   --footer-height: 30px; /* Slim footer estimated height */
@@ -33,6 +36,9 @@ body.dark-mode {
   --text-main: #cdd9e5; /* Pearl Grey */
   --text-muted: #768390;
   --accent-color: #ffa726; /* Lighter/Golden Orange for better contrast on dark */
+
+  --bg-secondary: #0d1117; /* Darker background for components */
+  --bg-tertiary: #30363d; /* Lighter background for slots */
 
   --glass-border: #444c56; /* Medium Grey Border */
   --paper-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); /* Deeper shadows */

@@ -259,7 +259,12 @@ export function initHome() {
   newStartBtn.addEventListener("click", () => {
     if (currentMode === "daily") {
       console.log("Starting Daily Game...");
-      alert("¡Empezando el Desafío Diario! (Próximamente)");
+      // alert("¡Empezando el Desafío Diario! (Próximamente)");
+      import("./memory.js")
+        .then((module) => {
+          module.initMemoryGame();
+        })
+        .catch((err) => console.error("Failed to load Memory Game", err));
     } else {
       console.log("Starting Custom Game...");
       alert("Modo Personalizado: ¡Configura tu juego! (Próximamente)");

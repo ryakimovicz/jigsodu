@@ -1,1 +1,263 @@
-/* Memory game specific styles */
+/* Memory Game Container */
+#memory-game {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  padding-top: calc(var(--header-height) + 1rem); /* Clear fixed header */
+  box-sizing: border-box;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.game-header {
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.game-header h2 {
+  font-family: "Lora", serif;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Main Grid Layout */
+.memory-grid-layout {
+  display: grid;
+  width: 100%;
+  max-width: 1200px;
+  grid-template-columns: 80px 320px 80px; /* Fixed side width for columns */
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "left board right"
+    "left cards right";
+  gap: 1.5rem;
+  justify-content: center;
+  flex: 1;
+}
+
+/* Grid Areas */
+.board-wrapper {
+  grid-area: board;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.collected-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Spacing between collected pieces */
+  width: 100%;
+  min-height: 300px; /* Minimum height for desktop column */
+}
+
+.collected-zone.left {
+  grid-area: left;
+  align-items: flex-end;
+}
+
+.collected-zone.right {
+  grid-area: right;
+  align-items: flex-start;
+}
+
+.cards-area {
+  grid-area: cards;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  justify-content: center;
+  align-content: start;
+  perspective: 1000px; /* For flip effect */
+}
+
+/* Board Styling */
+.memory-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 4px;
+  background: var(--bg-secondary);
+  padding: 4px;
+  border-radius: 8px;
+  width: 300px;
+  height: 300px;
+}
+
+.sudoku-chunk-slot {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.sudoku-chunk-slot.filled {
+  background: transparent;
+}
+
+/* Card Styling */
+.memory-card {
+  width: 60px; /* Aspect ratio fit? */
+  height: 60px;
+  position: relative;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.memory-card.flipped {
+  transform: rotateY(180deg);
+  cursor: default;
+}
+
+.memory-card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.memory-card-front,
+.memory-card-back {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  backface-visibility: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.memory-card-front {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-hover)
+  );
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.memory-card-back {
+  background: var(--bg-secondary);
+  transform: rotateY(180deg);
+  border: 2px solid var(--primary-color);
+  padding: 1px;
+}
+
+/* Mini Sudoku Grid Content */
+.mini-sudoku-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: 100%;
+  height: 100%;
+  gap: 1px;
+  background: #ccc; /* Grid lines color */
+}
+
+.mini-cell {
+  background: white; /* Or variable */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 8px; /* Very small font for mini representation */
+  font-family: "Outfit", sans-serif;
+  color: #333;
+}
+.dark-mode .mini-cell {
+  background: #2a2a2a;
+  color: #eee;
+}
+
+/* Collected Piece Styling */
+.collected-piece {
+  width: 60px;
+  height: 60px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .memory-grid-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding-bottom: 2rem;
+  }
+
+  /* Order: Board -> Collected -> Cards */
+  .board-wrapper {
+    order: 1;
+    width: 100%;
+  }
+
+  /* We need to visually merge left and right zones on mobile */
+  #collected-left,
+  #collected-right {
+    order: 2;
+    flex-direction: row; /* Horizontal row */
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    min-height: 0; /* Remove fixed height constraint */
+  }
+  /* Maybe make them appear as one block visually? */
+
+  .cards-area {
+    order: 3;
+    grid-template-columns: repeat(4, 1fr);
+    width: 100%;
+    gap: 8px;
+  }
+
+  .memory-card {
+    width: 18vw;
+    height: 18vw;
+    max-width: 70px;
+    max-height: 70px;
+  }
+
+  .mini-cell {
+    font-size: 8px;
+  }
+}
