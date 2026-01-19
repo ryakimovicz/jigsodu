@@ -224,10 +224,9 @@ function disableCards() {
     // Optional: fade them out or keep them until we place the prize?
     // We will keep them for a moment then maybe remove them if we want to simulate "moving"
     // But for now we just spawn the prize and leave cards (or hide them).
-    // Let's hide them to simulate they "became" the piece.
-    setTimeout(() => {
-      card.style.visibility = "hidden";
-    }, 500);
+    // Instead of hiding, we mark them as matched/disabled visually
+    // card.style.visibility = "hidden"; // Removed per user request
+    card.classList.add("matched");
   });
   flippedCards = [];
 }
