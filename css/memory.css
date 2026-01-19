@@ -44,14 +44,99 @@ body.dark-mode {
   text-align: center;
 }
 
-.game-header h2 {
+.header-title-container h2 {
   font-family: "Lora", serif;
   font-size: 1.5rem;
   color: var(--text-primary);
   margin: 0;
-  user-select: text; /* Allow selection of title */
+  user-select: text;
   -webkit-user-select: text;
   cursor: text;
+}
+
+.header-title-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+}
+
+.info-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.info-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--text-muted);
+  color: var(--text-muted);
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.info-icon:hover,
+.info-icon-wrapper.active .info-icon {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  background: rgba(var(--accent-rgb), 0.1);
+}
+
+.info-tooltip {
+  position: absolute;
+  top: 130%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--bg-paper);
+  border: 1px solid var(--glass-border);
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 200px;
+  text-align: center;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.info-icon-wrapper:hover .info-tooltip,
+.info-icon-wrapper.active .info-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.info-tooltip h3 {
+  font-size: 1rem;
+  color: var(--accent-color);
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.info-tooltip p {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Dark Mode Tooltip Override */
+.dark-mode .info-tooltip {
+  background: #2d333b;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* Main Grid Layout */

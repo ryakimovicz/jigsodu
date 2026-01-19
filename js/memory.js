@@ -26,6 +26,20 @@ export function initMemoryGame() {
   collectedLeft = document.getElementById("collected-left");
   collectedRight = document.getElementById("collected-right");
 
+  // Info Icon Mobile Interaction
+  const infoWrapper = document.querySelector(".info-icon-wrapper");
+  if (infoWrapper) {
+    infoWrapper.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevent closing immediately
+      infoWrapper.classList.toggle("active");
+    });
+
+    // Close when clicking outside
+    document.addEventListener("click", () => {
+      infoWrapper.classList.remove("active");
+    });
+  }
+
   // 2. Show Section (and Hide Home)
   if (memorySection) {
     memorySection.classList.remove("hidden");
