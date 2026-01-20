@@ -707,6 +707,12 @@ function shuffleArray(array) {
 // Timer Functions
 function startTimer() {
   stopTimer();
+  // Force layout update in case viewport settled
+  setTimeout(() => {
+    fitMemoryCards();
+    fitCollectedPieces();
+  }, 500);
+
   timerStartTime = Date.now();
   timerInterval = setInterval(updateTimer, 100);
   updateTimer();
