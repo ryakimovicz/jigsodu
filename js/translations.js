@@ -51,6 +51,11 @@ export const translations = {
 
     // Footer
     footer_rights: "© 2026 Román Yakimovicz",
+
+    // Memory Game Help
+    memory_help_title: "Cómo jugar",
+    memory_help_desc:
+      "Encuentra los pares de bloques sudoku.<br />Cada par revelado se colocará en el tablero o en tu colección.",
   },
   en: {
     app_title: "JIGSUDO",
@@ -103,5 +108,10 @@ export const translations = {
 
     // Footer
     footer_rights: "© 2026 Román Yakimovicz",
+
+    // Memory Game Help
+    memory_help_title: "How to play",
+    memory_help_desc:
+      "Find the matching Sudoku block pairs.<br />Each revealed pair will be placed on the board or in your collection.",
   },
 };

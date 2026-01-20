@@ -46,6 +46,8 @@ body.dark-mode {
 .game-header {
   margin-bottom: 0.5rem;
   text-align: center;
+  position: relative;
+  z-index: 20002; /* Ensure tooltip is above everything globally */
 }
 
 .header-title-container h2 {
@@ -60,7 +62,7 @@ body.dark-mode {
 
 .header-title-container {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: center;
   gap: 10px;
   position: relative;
@@ -71,20 +73,21 @@ body.dark-mode {
   display: flex;
   align-items: center;
   cursor: pointer;
+  transform: translateY(-2px); /* Nudge up slightly from baseline */
 }
 
 .info-icon {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  border: 2px solid var(--text-muted);
+  border: 1.5px solid var(--text-muted);
   color: var(--text-muted);
   font-family: var(--font-main);
   font-weight: 700;
-  font-size: 12px;
+  font-size: 10px;
   transition: all 0.2s ease;
   user-select: none;
 }
@@ -108,7 +111,7 @@ body.dark-mode {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   width: 200px;
   text-align: center;
-  z-index: 100;
+  z-index: 20002; /* Ensure above everything (board/cards) */
   opacity: 0;
   visibility: hidden;
   transition: all 0.3s ease;
@@ -156,6 +159,7 @@ body.dark-mode {
   gap: 1.5rem;
   justify-content: center;
   flex: 1;
+  padding-top: 2rem; /* Push content down on Desktop */
 }
 
 /* Grid Areas */
@@ -163,7 +167,7 @@ body.dark-mode {
   grid-area: board;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start; /* Desktop: Top Align */
 }
 
 .collected-zone {
@@ -172,7 +176,6 @@ body.dark-mode {
   gap: 8px; /* Spacing between collected pieces */
   width: 100%;
   min-height: 300px; /* Minimum height for desktop column */
-  padding-top: 48px; /* Push down to align with board top (visually adjusted) */
 }
 
 /* Wrapper to preserve grid layout on desktop */
@@ -358,12 +361,16 @@ body.dark-mode {
 .collected-piece {
   width: 70px; /* Slightly larger collected pieces */
   height: 70px;
-  border: 1px solid var(--border-color);
+  border: 2px solid #546e7a; /* Blue Grey (Darker for Light Mode) */
   border-radius: 4px;
   overflow: hidden;
   animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   user-select: none;
   -webkit-user-select: none;
+}
+
+.dark-mode .collected-piece {
+  border-color: #90a4ae; /* Blue Grey (Lighter for Dark Mode) */
 }
 
 @keyframes popIn {
@@ -435,17 +442,17 @@ body.dark-mode {
   }
 
   .test-panel.red {
-    background: red;
+    background: transparent;
     height: calc(43.5vh - var(--header-height));
     flex: none;
   }
   .test-panel.yellow {
-    background: yellow;
+    background: transparent;
     height: 13vh;
     flex: none;
   }
   .test-panel.green {
-    background: green;
+    background: transparent;
     flex: 1;
   }
 
@@ -454,6 +461,7 @@ body.dark-mode {
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
+    padding-top: 0; /* consistent with existing padding-bottom: 0 logic */
     padding-bottom: 0; /* Remove padding to use full green zone */
     position: relative;
     z-index: 10000;
@@ -465,7 +473,7 @@ body.dark-mode {
   /* Bring Header above test panels too */
   .game-header {
     position: relative;
-    z-index: 10000;
+    z-index: 20002;
   }
 
   /* Order: Board -> Collected -> Cards */
