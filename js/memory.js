@@ -1,5 +1,16 @@
+import {
+  initJigsaw,
+  placeInPanel,
+  transitionToJigsaw,
+  handleSlotClick_v2,
+  debugJigsawPlace,
+  createPanelPlaceholders,
+  fitCollectedPieces, // imported if we want to expose it or use it during resize loop?
+  handlePieceSelect,
+  checkBoardCompletion,
+} from "./jigsaw.js";
 import { gameManager } from "./game-manager.js";
-import { translations } from "./translations.js";
+import { CONFIG } from "./config.js";
 
 // DOM Elements
 let memorySection;
@@ -13,7 +24,7 @@ let cards = [];
 let flippedCards = [];
 let isLocked = false;
 let matchesFound = 0;
-let panelCount = 0;
+// let panelCount = 0; // Removed
 const TOTAL_PAIRS = 9;
 
 // Timer State
@@ -29,6 +40,14 @@ export function initMemoryGame() {
   cardsContainer = document.getElementById("memory-cards");
   collectedLeft = document.getElementById("collected-left");
   collectedRight = document.getElementById("collected-right");
+
+  // Init Jigsaw Logic Reference (Pass Elements)
+  initJigsaw({
+    memorySection,
+    boardContainer,
+    collectedLeft,
+    collectedRight,
+  });
 
   // Info Icon Mobile Interaction
   const infoWrapper = document.querySelector(".info-icon-wrapper");
@@ -62,20 +81,22 @@ export function initMemoryGame() {
   flippedCards = [];
   isLocked = false;
   matchesFound = 0;
-  panelCount = 0;
+  matchesFound = 0;
+  // panelCount = 0; // Removed unused
   cardsContainer.innerHTML = "";
   collectedLeft.innerHTML = "";
   collectedRight.innerHTML = "";
 
   // Reset Board Slots
   setupBoard(state.data.initialPuzzle);
+  createPanelPlaceholders(); // <--- Imported from jigsaw.js
 
   // 5. Setup Cards
   const puzzleChunks = getChunksFromBoard(state.data.initialPuzzle);
   setupCards(puzzleChunks);
 
   // Initialize Resizing
-  fitCollectedPieces();
+  fitCollectedPieces(); // Imported
   fitMemoryCards();
   window.addEventListener("resize", () => {
     fitCollectedPieces();
@@ -94,6 +115,12 @@ export function initMemoryGame() {
 }
 
 function debugAutoMatch() {
+  const gameSection = document.getElementById("memory-game");
+  if (gameSection && gameSection.classList.contains("jigsaw-mode")) {
+    debugJigsawPlace();
+    return;
+  }
+
   // 1. Find unmatched chunks
   const availableCards = Array.from(
     document.querySelectorAll(".memory-card:not(.matched)"),
@@ -255,7 +282,7 @@ function fitMemoryCards() {
   });
 }
 
-function getChunksFromBoard(board) {
+export function getChunksFromBoard(board) {
   const chunks = [];
   for (let tr = 0; tr < 3; tr++) {
     for (let tc = 0; tc < 3; tc++) {
@@ -280,6 +307,8 @@ function setupBoard() {
     const slot = document.createElement("div");
     slot.classList.add("sudoku-chunk-slot");
     slot.dataset.slotIndex = i;
+    // Add Jigsaw Slot Listener
+    slot.addEventListener("click", () => handleSlotClick_v2(i));
     boardContainer.appendChild(slot);
   }
 }
@@ -376,18 +405,31 @@ function visualShuffle() {
 }
 
 // Helper to render mini grid
-function createMiniGrid(chunkData) {
+// Helper to render mini grid
+export function createMiniGrid(chunkData, chunkIndex = null) {
   const table = document.createElement("div");
   table.classList.add("mini-sudoku-grid");
-  chunkData.forEach((row) => {
-    row.forEach((num) => {
-      const cell = document.createElement("div");
-      cell.classList.add("mini-cell");
-      cell.textContent = num !== 0 ? num : "";
-      if (num !== 0) cell.classList.add("has-number");
-      table.appendChild(cell);
+  if (chunkIndex !== null) {
+    table.dataset.chunkIndex = chunkIndex;
+  }
+
+  // If chunkData has 'chunkData' property (nested object issue ref line 301)
+  // Ensure we are iterating the 2D array
+  const gridData = Array.isArray(chunkData[0])
+    ? chunkData
+    : chunkData.chunkData;
+
+  if (gridData) {
+    gridData.forEach((row) => {
+      row.forEach((num) => {
+        const cell = document.createElement("div");
+        cell.classList.add("mini-cell");
+        cell.textContent = num !== 0 ? num : "";
+        if (num !== 0) cell.classList.add("has-number");
+        table.appendChild(cell);
+      });
     });
-  });
+  }
   return table;
 }
 
@@ -406,7 +448,7 @@ function createCardElement(data) {
   const back = document.createElement("div");
   back.classList.add("memory-card-back");
 
-  back.appendChild(createMiniGrid(data.chunkData));
+  back.appendChild(createMiniGrid(data.chunkData, data.chunkIndex));
 
   inner.appendChild(front);
   inner.appendChild(back);
@@ -504,22 +546,18 @@ function handleMatchSuccess(chunkIndex) {
 
   // Check Win
   if (matchesFound === TOTAL_PAIRS) {
+    // 500ms delay removed per user request for immediate feedback
+    // 1. Hide Cards
+    if (cardsContainer) cardsContainer.classList.add("cards-hidden");
+
+    // 2. Pulse Board
+    if (boardContainer) boardContainer.classList.add("board-complete");
+
+    // 3. Transition to Jigsaw (Keep Timer Running!)
     setTimeout(() => {
-      // 0. Stop Timer
-      stopTimer();
-
-      // 1. Hide Cards
-      if (cardsContainer) cardsContainer.classList.add("cards-hidden");
-
-      // 2. Pulse Board
-      if (boardContainer) boardContainer.classList.add("board-complete");
-
-      // 3. Official Alert
-      setTimeout(() => {
-        if (boardContainer) boardContainer.classList.remove("board-complete"); // Revert border
-        alert("¡Juego Completado! Próximamente: Jigsaw Stage");
-      }, 800); // Wait just enough for the 0.6s pulse to finish
-    }, 500); // Small delay after last piece to start finale
+      if (boardContainer) boardContainer.classList.remove("board-complete");
+      transitionToJigsaw();
+    }, 800);
   }
 }
 
@@ -535,7 +573,7 @@ function placeInBoard(chunkIndex) {
     const chunks = getChunksFromBoard(state.data.initialPuzzle);
     const chunkData = chunks[chunkIndex];
 
-    const content = createMiniGrid(chunkData);
+    const content = createMiniGrid(chunkData, chunkIndex);
     // Maybe ensure it fills the slot perfectly?
     content.style.width = "100%";
     content.style.height = "100%";
@@ -545,146 +583,6 @@ function placeInBoard(chunkIndex) {
 }
 
 // Mobile Responsive Sizing Logic (Moved to Module Scope)
-function getCollectedPieceSize() {
-  if (window.innerWidth > 768) return null;
-
-  const zoneHeight =
-    (window.visualViewport
-      ? window.visualViewport.height
-      : window.innerHeight) * 0.13;
-  const containerWidth = window.innerWidth;
-  const gap = 4;
-  const padding = 10;
-
-  // OPTION A: 2 Rows -> Add safety buffer (-4px)
-  const hSizeA = zoneHeight / 2 - 2 * gap - 2;
-  const wSizeA = (containerWidth - padding - 5 * gap) / 4;
-  const sizeA = Math.min(hSizeA, wSizeA);
-
-  // OPTION B: 1 Row -> Add safety buffer (-4px)
-  const hSizeB = zoneHeight - 2 * gap - 4;
-  const wSizeB = (containerWidth / 2 - padding - 5 * gap) / 4;
-  const sizeB = Math.min(hSizeB, wSizeB);
-
-  // Pick Winner
-  let finalSize, isOneRow;
-  if (sizeB >= sizeA) {
-    finalSize = sizeB;
-    isOneRow = true;
-  } else {
-    finalSize = sizeA;
-    isOneRow = false;
-  }
-
-  return { size: finalSize, isOneRow, gap };
-}
-
-function fitCollectedPieces() {
-  const wrapper = document.querySelector(".collected-wrapper");
-  const left = document.getElementById("collected-left");
-  const right = document.getElementById("collected-right");
-  const pieces = document.querySelectorAll(".collected-piece");
-
-  if (!wrapper || !left || !right) return;
-
-  // DESKTOP RESET
-  if (window.innerWidth > 768) {
-    // Clear all inline styles so CSS takes over
-    wrapper.style = "";
-    left.style = "";
-    right.style = "";
-    pieces.forEach((p) => (p.style = "")); // Revert to CSS class sizing (70px)
-    return;
-  }
-
-  // MOBILE LOGIC
-  const config = getCollectedPieceSize();
-  if (!config) return;
-
-  const { size, isOneRow, gap } = config;
-
-  // Apply Element Styles
-  pieces.forEach((p) => {
-    p.style.width = `${size}px`;
-    p.style.height = `${size}px`;
-    p.style.fontSize = `${size * 0.5}px`;
-    p.style.margin = `${gap / 2}px`;
-  });
-
-  // Apply Container Layout
-  const zoneHeight = window.innerHeight * 0.13;
-
-  // Calculate Fixed Width for containers to ensure pieces don't shift
-  // Each piece has margin gap/2 left and right. Total space per piece = size + gap.
-  // Row holds 4 pieces.
-  const rowWidth = (size + gap) * 4;
-
-  if (isOneRow) {
-    // 1 Row
-    wrapper.style.flexDirection = "row";
-    wrapper.style.height = `${zoneHeight}px`;
-    wrapper.style.justifyContent = "center"; // Center the pair of containers
-    wrapper.style.alignItems = "center";
-
-    left.style.width = `${rowWidth}px`; // Fixed width
-    left.style.height = "100%";
-    left.style.flexWrap = "nowrap";
-    left.style.justifyContent = "flex-start"; // Fill from start
-    left.style.display = "flex";
-
-    right.style.width = `${rowWidth}px`; // Fixed width
-    right.style.height = "100%";
-    right.style.flexWrap = "nowrap";
-    right.style.justifyContent = "flex-start"; // Fill from start
-    right.style.display = "flex";
-  } else {
-    // 2 Rows
-    wrapper.style.flexDirection = "column";
-    wrapper.style.height = `${zoneHeight}px`;
-    wrapper.style.justifyContent = "center";
-    wrapper.style.alignItems = "center"; // Center the stack
-
-    left.style.width = `${rowWidth}px`; // Fixed width
-    left.style.height = "50%";
-    left.style.flexWrap = "nowrap";
-    left.style.justifyContent = "flex-start";
-    left.style.display = "flex";
-
-    right.style.width = `${rowWidth}px`; // Fixed width
-    right.style.height = "50%";
-    right.style.flexWrap = "nowrap";
-    right.style.justifyContent = "flex-start";
-    right.style.display = "flex";
-  }
-}
-
-function placeInPanel(chunkIndex) {
-  panelCount++;
-  // 1-4 -> Left, 5-8 -> Right
-  let targetContainer = panelCount <= 4 ? collectedLeft : collectedRight;
-
-  const state = gameManager.getState();
-  const chunks = getChunksFromBoard(state.data.initialPuzzle);
-  const chunkData = chunks[chunkIndex];
-
-  const piece = document.createElement("div");
-  piece.classList.add("collected-piece");
-  piece.appendChild(createMiniGrid(chunkData));
-
-  // PRE-APPLY SIZE
-  const config = getCollectedPieceSize();
-  if (config) {
-    piece.style.width = `${config.size}px`;
-    piece.style.height = `${config.size}px`;
-    piece.style.fontSize = `${config.size * 0.5}px`;
-    piece.style.margin = `${config.gap / 2}px`;
-  }
-
-  targetContainer.appendChild(piece);
-
-  // Recalc layout
-  fitCollectedPieces();
-}
 
 // Global Resize Listener with Debounce
 let resizeTimeout;

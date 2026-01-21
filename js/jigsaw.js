@@ -1,1 +1,915 @@
-/* Jigsaw Logic */
+import { gameManager } from "./game-manager.js";
+import { translations } from "./translations.js";
+import { getChunksFromBoard, createMiniGrid } from "./memory.js";
+import { getConflicts } from "./sudoku-logic.js";
+import { getCurrentLang } from "./i18n.js";
+
+// DOM Elements Reference
+let boardContainer;
+let collectedLeft;
+let collectedRight;
+let memorySection;
+
+// State
+let selectedPieceElement = null;
+let dragClone = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+// Deferred Drag State
+let potentialDragTarget = null;
+let dragStartX = 0;
+let dragStartY = 0;
+const DRAG_THRESHOLD = 5; // px
+
+export function initJigsaw(elements) {
+  boardContainer = elements.boardContainer;
+  collectedLeft = elements.collectedLeft;
+  collectedRight = elements.collectedRight;
+  memorySection = elements.memorySection;
+
+  // Initialize Drag & Drop
+  initDragAndDrop();
+
+  // Initialize resizing listener for Jigsaw pieces
+  window.addEventListener("resize", () => {
+    fitCollectedPieces();
+  });
+}
+
+// =========================================
+// Jigsaw Logic
+// =========================================
+
+export function createPanelPlaceholders() {
+  if (!collectedLeft || !collectedRight) return;
+
+  collectedLeft.innerHTML = "";
+  collectedRight.innerHTML = "";
+
+  // Left Panel: Generic Placeholders
+  for (let i = 0; i < 4; i++) {
+    createPlaceholder(collectedLeft, null);
+  }
+
+  // Right Panel: Generic Placeholders
+  for (let i = 0; i < 4; i++) {
+    createPlaceholder(collectedRight, null);
+  }
+
+  fitCollectedPieces();
+}
+
+function createPlaceholder(container, index) {
+  const p = document.createElement("div");
+  p.classList.add("collected-piece", "placeholder");
+
+  // Attach selection listener immediately
+  p.addEventListener("click", () => handlePieceSelect(p));
+
+  container.appendChild(p);
+}
+
+export function placeInPanel(chunkIndex) {
+  const allPlaceholders = document.querySelectorAll(
+    ".collected-piece.placeholder",
+  );
+  const available = Array.from(allPlaceholders).find((p) => !p.hasChildNodes());
+
+  if (!available) {
+    console.error(`No available placeholder for chunk ${chunkIndex}!`);
+    return;
+  }
+
+  // Assign Identity NOW
+  const placeholder = available;
+  placeholder.dataset.chunkIndex = chunkIndex;
+
+  const state = gameManager.getState();
+  const chunks = getChunksFromBoard(state.data.initialPuzzle);
+  const chunkData = chunks[chunkIndex];
+
+  // "Hydrate" the placeholder
+  placeholder.innerHTML = "";
+  placeholder.appendChild(createMiniGrid(chunkData, chunkIndex));
+
+  placeholder.classList.remove("placeholder");
+
+  // Anim?
+  placeholder.style.opacity = "0";
+  setTimeout(() => (placeholder.style.opacity = "1"), 50);
+
+  fitCollectedPieces();
+}
+
+export function fitCollectedPieces() {
+  const wrapper = document.querySelector(".collected-wrapper");
+  const pieces = document.querySelectorAll(".collected-piece");
+
+  if (!wrapper || !collectedLeft || !collectedRight) return;
+
+  // DESKTOP RESET: Trust CSS > 768px (except for laptop specific override handled in CSS)
+  if (window.innerWidth > 768) {
+    wrapper.style = "";
+    collectedLeft.style = "";
+    collectedRight.style = "";
+    pieces.forEach((p) => (p.style = ""));
+    return;
+  }
+
+  const config = getCollectedPieceSize();
+  if (!config) return;
+
+  const { size, isOneRow, gap } = config;
+
+  // Apply Element Styles
+  pieces.forEach((p) => {
+    p.style.width = `${size}px`;
+    p.style.height = `${size}px`;
+    p.style.fontSize = `${size * 0.5}px`;
+    p.style.margin = `${gap / 2}px`;
+  });
+
+  // Apply Container Layout
+  const zoneHeight = window.innerHeight * 0.13;
+  const rowWidth = (size + gap) * 4;
+
+  if (isOneRow) {
+    wrapper.style.flexDirection = "row";
+    wrapper.style.height = `${zoneHeight}px`;
+    wrapper.style.justifyContent = "center";
+    wrapper.style.alignItems = "center";
+
+    collectedLeft.style.width = `${rowWidth}px`;
+    collectedLeft.style.height = "100%";
+    collectedLeft.style.flexWrap = "nowrap";
+    collectedLeft.style.justifyContent = "flex-start";
+    collectedLeft.style.display = "flex";
+
+    collectedRight.style.width = `${rowWidth}px`;
+    collectedRight.style.height = "100%";
+    collectedRight.style.flexWrap = "nowrap";
+    collectedRight.style.justifyContent = "flex-start";
+    collectedRight.style.display = "flex";
+  } else {
+    wrapper.style.flexDirection = "column";
+    wrapper.style.height = `${zoneHeight}px`;
+    wrapper.style.justifyContent = "center";
+    wrapper.style.alignItems = "center";
+
+    collectedLeft.style.width = `${rowWidth}px`;
+    collectedLeft.style.height = "50%";
+    collectedLeft.style.flexWrap = "nowrap";
+    collectedLeft.style.justifyContent = "flex-start";
+    collectedLeft.style.display = "flex";
+
+    collectedRight.style.width = `${rowWidth}px`;
+    collectedRight.style.height = "50%";
+    collectedRight.style.flexWrap = "nowrap";
+    collectedRight.style.justifyContent = "flex-start";
+    collectedRight.style.display = "flex";
+  }
+}
+
+function getCollectedPieceSize() {
+  if (window.innerWidth > 768) return null;
+
+  const zoneHeight =
+    (window.visualViewport
+      ? window.visualViewport.height
+      : window.innerHeight) * 0.13;
+  const containerWidth = window.innerWidth;
+  const gap = 4;
+  const padding = 10;
+
+  // OPTION A: 2 Rows -> Add safety buffer (-4px)
+  const hSizeA = zoneHeight / 2 - 2 * gap - 2;
+  const wSizeA = (containerWidth - padding - 5 * gap) / 4;
+  const sizeA = Math.min(hSizeA, wSizeA);
+
+  // OPTION B: 1 Row -> Add safety buffer (-4px)
+  const hSizeB = zoneHeight - 2 * gap - 4;
+  const wSizeB = (containerWidth / 2 - padding - 5 * gap) / 4;
+  const sizeB = Math.min(hSizeB, wSizeB);
+
+  // Pick Winner
+  let finalSize, isOneRow;
+  if (sizeB >= sizeA) {
+    finalSize = sizeB;
+    isOneRow = true;
+  } else {
+    finalSize = sizeA;
+    isOneRow = false;
+  }
+
+  return { size: finalSize, isOneRow, gap };
+}
+
+export function handlePieceSelect(pieceElement) {
+  // If we click the same piece, deselect
+  if (selectedPieceElement === pieceElement) {
+    deselectPiece();
+    return;
+  }
+
+  // If a piece is already selected, try to Interact (Move/Swap)
+  if (selectedPieceElement) {
+    const source = selectedPieceElement;
+    const target = pieceElement;
+    const isTargetEmpty = target.classList.contains("placeholder");
+    const isSourceBoard = source.classList.contains("sudoku-chunk-slot");
+
+    // Get Content
+    const sourceContent = source.querySelector(".mini-sudoku-grid");
+    const targetContent = target.querySelector(".mini-sudoku-grid"); // may be null
+
+    if (!sourceContent) {
+      // Should not happen if selected, but safe fail
+      deselectPiece();
+      return;
+    }
+
+    // --- LOGIC: SWAP or MOVE ---
+    // If Target is Occupied -> SWAP
+    if (!isTargetEmpty && targetContent) {
+      // Move Target Content -> Source
+      source.innerHTML = "";
+      source.appendChild(targetContent);
+
+      // Update Source State
+      if (isSourceBoard) {
+        source.classList.add("filled");
+        targetContent.style.width = "100%";
+        targetContent.style.height = "100%";
+      } else {
+        // Source is Panel
+        source.classList.remove("placeholder", "filled");
+        source.classList.add("collected-piece");
+        source.dataset.chunkIndex = targetContent.dataset.chunkIndex; // ID Transfer
+      }
+
+      // Move Source Content -> Target
+      target.innerHTML = "";
+      target.appendChild(sourceContent);
+      // Target is Panel
+      target.classList.remove("placeholder");
+      target.classList.add("collected-piece");
+      target.dataset.chunkIndex = sourceContent.dataset.chunkIndex; // ID Transfer
+
+      // Resize if needed
+      fitCollectedPieces();
+      deselectPiece();
+      return;
+    }
+    // If Target is Empty -> MOVE
+    else {
+      target.appendChild(sourceContent);
+
+      // Update Target State (Panel)
+      target.classList.remove("placeholder");
+      target.classList.add("collected-piece");
+      target.dataset.chunkIndex = sourceContent.dataset.chunkIndex;
+
+      // Update Source State (Empty it)
+      source.innerHTML = "";
+      if (isSourceBoard) {
+        source.classList.remove("filled");
+      } else {
+        source.classList.add("placeholder");
+        delete source.dataset.chunkIndex;
+      }
+
+      fitCollectedPieces();
+      deselectPiece();
+      return;
+    }
+  }
+
+  // Select new (Only if nothing selected previously fell through, or first selection)
+  // If we click a placeholder without a selected source, ignore it.
+  if (pieceElement.classList.contains("placeholder")) return;
+
+  selectedPieceElement = pieceElement;
+  selectedPieceElement.classList.add("selected");
+  if (memorySection) memorySection.classList.add("selection-active");
+}
+
+function deselectPiece() {
+  if (selectedPieceElement) {
+    selectedPieceElement.classList.remove("selected");
+    selectedPieceElement = null;
+  }
+  if (memorySection) memorySection.classList.remove("selection-active");
+}
+
+// Updated V2: Handles Panel Pieces AND Board Pieces
+export function handleSlotClick_v2(slotIndex) {
+  const slot = boardContainer.querySelector(`[data-slot-index="${slotIndex}"]`);
+  if (!slot) return;
+
+  // CASE 1: Interact with Selected Piece (Move or Swap)
+  if (selectedPieceElement) {
+    // Ignore locked center piece interaction as Target
+    if (slotIndex === 4) {
+      // Allow selecting it? No, users can't select locked piece.
+      // Allow dropping on it? No.
+      console.warn("Center piece is locked.");
+      return;
+    }
+
+    // Ignore self-click
+    if (selectedPieceElement === slot) {
+      deselectPiece();
+      return;
+    }
+
+    const source = selectedPieceElement;
+    const target = slot;
+    const isTargetFilled = target.classList.contains("filled");
+    const isSourceBoard = source.classList.contains("sudoku-chunk-slot");
+
+    const sourceContent = source.querySelector(".mini-sudoku-grid");
+    const targetContent = target.querySelector(".mini-sudoku-grid"); // may be null
+
+    if (!sourceContent) {
+      deselectPiece();
+      return;
+    }
+
+    // Safety check for Panel Source chunks
+    if (
+      !isSourceBoard &&
+      !source.dataset.chunkIndex &&
+      source.dataset.chunkIndex !== "0"
+    ) {
+      // Invalid panel source?
+      // console.warn("Panel source missing ID");
+      // might be just empty placeholder selected by accident logic?
+    }
+
+    // --- LOGIC: SWAP or MOVE ---
+    if (isTargetFilled && targetContent) {
+      // SWAP
+      // Move Target -> Source
+      source.innerHTML = "";
+      source.appendChild(targetContent);
+
+      if (isSourceBoard) {
+        source.classList.add("filled");
+      } else {
+        // Source is Panel
+        source.classList.remove("placeholder", "filled");
+        source.classList.add("collected-piece");
+        source.dataset.chunkIndex = targetContent.dataset.chunkIndex; // ID Transfer
+        // Reset Style for Panel
+        // fitCollectedPieces will handle size, but we might need to reset width/height if it came from board
+        // Actually fitCollectedPieces calls getCollectedPieceSize() and applies styles.
+        // But valid to clear inline styles just in case
+        targetContent.style.width = "";
+        targetContent.style.height = "";
+      }
+
+      // Move Source -> Target
+      target.innerHTML = "";
+      target.appendChild(sourceContent);
+      target.classList.add("filled");
+      // Reset Style for Board (Fill Slot)
+      sourceContent.style.width = "100%";
+      sourceContent.style.height = "100%";
+
+      fitCollectedPieces(); // Update Panel
+      deselectPiece();
+    } else {
+      // MOVE (Target Empty)
+      target.innerHTML = "";
+      target.appendChild(sourceContent);
+      target.classList.add("filled");
+      // Reset Style for Board
+      sourceContent.style.width = "100%";
+      sourceContent.style.height = "100%";
+
+      // Clear Source
+      source.innerHTML = "";
+      if (isSourceBoard) {
+        source.classList.remove("filled");
+      } else {
+        // Panel
+        source.classList.add("placeholder");
+        delete source.dataset.chunkIndex;
+      }
+
+      fitCollectedPieces();
+      deselectPiece();
+    }
+
+    // Check Board State after move/swap
+    checkBoardCompletion();
+
+    return;
+  }
+
+  // CASE 2: No piece selected -> Select this slot if it has content
+  else {
+    if (slot.classList.contains("filled")) {
+      // Ignore locked center piece
+      if (slotIndex === 4) return;
+
+      handlePieceSelect(slot);
+    }
+  }
+}
+
+export function transitionToJigsaw() {
+  console.log("Transitioning to Jigsaw Stage...");
+  const lang = getCurrentLang();
+  const t = translations[lang];
+
+  // 1. Update Title with Fade
+  const titleEl = document.querySelector(".header-title-container h2");
+  if (titleEl) {
+    titleEl.style.transition = "opacity 0.5s ease";
+    titleEl.style.opacity = "0";
+    setTimeout(() => {
+      titleEl.textContent = t.jigsaw_help_title || "Rompecabezas";
+      titleEl.style.opacity = "1";
+    }, 500);
+  }
+
+  // 1.5 LOCK TIMER POSITION
+  const timer = document.getElementById("memory-timer");
+  if (timer) {
+    const rect = timer.getBoundingClientRect();
+    const winWidth = window.innerWidth;
+    const winHeight = window.innerHeight;
+
+    // Use BOTTOM for vertical to stick to footer
+    const bottomGap = winHeight - rect.bottom;
+
+    // Use CENTER % for horizontal
+    const centerX = rect.left + rect.width / 2;
+    const leftPercent = (centerX / winWidth) * 100;
+
+    timer.style.position = "fixed";
+    timer.style.left = `${leftPercent}%`;
+    timer.style.bottom = `${bottomGap}px`;
+    timer.style.top = "auto";
+    timer.style.transform = "translateX(-50%)";
+    // timer.style.width = `${rect.width}px`; // No fixed width allowed, let it grow
+    timer.style.whiteSpace = "nowrap"; // Force single line
+    timer.style.margin = "0";
+    timer.style.zIndex = "10005"; // Ensure visibility
+  }
+
+  // 2. Add Jigsaw Mode Class
+  if (memorySection) {
+    if (document.startViewTransition) {
+      const pieces = document.querySelectorAll(".collected-piece");
+      pieces.forEach((p, i) => {
+        const chunkIndex = p.dataset.chunkIndex || i;
+        if (chunkIndex) p.style.viewTransitionName = `piece-${chunkIndex}`;
+      });
+
+      const board = document.querySelector(".memory-board");
+      if (board) board.style.viewTransitionName = "board-main";
+
+      const transition = document.startViewTransition(() => {
+        memorySection.classList.add("jigsaw-mode");
+      });
+
+      transition.finished.finally(() => {
+        pieces.forEach((p) => (p.style.viewTransitionName = ""));
+        if (board) board.style.viewTransitionName = "";
+
+        // Update State Logic
+        gameManager.updateProgress("progress", { currentStage: "jigsaw" });
+        deselectPiece(); // Ensure clear state
+        fitCollectedPieces(); // Force layout update
+      });
+    } else {
+      memorySection.classList.add("jigsaw-mode");
+      // Fallback update
+      gameManager.updateProgress("progress", { currentStage: "jigsaw" });
+      deselectPiece(); // Ensure clear state
+      fitCollectedPieces(); // Force layout update
+    }
+  }
+
+  // 3. Update Tooltip Info
+  const tooltipTitle = document.querySelector(".info-tooltip h3");
+  const tooltipDesc = document.querySelector(".info-tooltip p");
+
+  if (tooltipTitle && tooltipDesc) {
+    tooltipTitle.style.transition = "opacity 0.5s ease";
+    tooltipDesc.style.transition = "opacity 0.5s ease";
+    tooltipTitle.style.opacity = "0";
+    tooltipDesc.style.opacity = "0";
+
+    setTimeout(() => {
+      tooltipTitle.textContent = t.jigsaw_help_title;
+      tooltipDesc.innerHTML = t.jigsaw_help_desc;
+      tooltipTitle.style.opacity = "1";
+      tooltipDesc.style.opacity = "1";
+    }, 500);
+  }
+}
+
+// =========================================
+// Drag & Drop
+// =========================================
+export function initDragAndDrop() {
+  document.addEventListener("pointerdown", handlePointerDown, {
+    passive: false,
+  });
+  document.addEventListener("pointermove", handlePointerMove, {
+    passive: false,
+  });
+  document.addEventListener("pointerup", handlePointerUp, { passive: false });
+}
+
+export function handlePointerDown(e) {
+  if (e.pointerType === "touch") return; // Mouse/Pen only
+
+  const target = e.target.closest(".collected-piece, .sudoku-chunk-slot");
+  if (!target) return;
+  // Center locked
+  if (target.dataset.slotIndex === "4") return;
+
+  // Only drag/select if it has content (and not a placeholder)
+  // Actually, for pure selection we might want to allow selecting placeholders?
+  // No, selection logic currently ignores placeholders unless dropping.
+  if (target.classList.contains("placeholder") || target.children.length === 0)
+    return;
+
+  // STOP: Do NOT prevent default yet. Allow Click to propagate.
+  // e.preventDefault();
+
+  // Store Potential Drag
+  potentialDragTarget = target;
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+
+  // Do NOT select immediately. Wait for Click (handled by click listeners) OR Drag (handled by pointermove).
+}
+
+export function handlePointerMove(e) {
+  // 1. Check if we need to START dragging
+  if (potentialDragTarget && !dragClone) {
+    const dx = Math.abs(e.clientX - dragStartX);
+    const dy = Math.abs(e.clientY - dragStartY);
+
+    if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
+      // START DRAG
+      const target = potentialDragTarget;
+
+      // Now we take over interactions
+      // e.preventDefault(); (Will do in next frame or now)
+
+      // Deselect previous (Drag overrides Click-Swap intent)
+      deselectPiece();
+      selectedPieceElement = target;
+      selectedPieceElement.classList.add("selected");
+      if (memorySection) memorySection.classList.add("selection-active");
+      selectedPieceElement.classList.add("dragging-source");
+
+      // Init Clone
+      const content = target.querySelector(".mini-sudoku-grid");
+      if (!content) {
+        potentialDragTarget = null;
+        return;
+      }
+
+      dragClone = content.cloneNode(true);
+      dragClone.classList.add("dragging-clone");
+      const rect = target.getBoundingClientRect();
+      dragClone.style.width = `${rect.width}px`;
+      dragClone.style.height = `${rect.height}px`;
+      document.body.appendChild(dragClone);
+
+      dragOffsetX = e.clientX - rect.left;
+      dragOffsetY = e.clientY - rect.top;
+
+      updateDragPosition(e.clientX, e.clientY);
+    }
+  }
+
+  // 2. Handle Active Drag
+  if (!dragClone) return;
+
+  e.preventDefault(); // Stop native selection/scrolling
+  updateDragPosition(e.clientX, e.clientY);
+
+  // Highlight drop targets
+  const elements = document.elementsFromPoint(e.clientX, e.clientY);
+  const dropTarget = elements.find(
+    (el) =>
+      (el.classList.contains("sudoku-chunk-slot") ||
+        el.classList.contains("collected-piece")) &&
+      el !== selectedPieceElement &&
+      el.dataset.slotIndex !== "4", // Not center
+  );
+
+  document
+    .querySelectorAll(".drop-hover")
+    .forEach((el) => el.classList.remove("drop-hover"));
+  if (dropTarget) {
+    dropTarget.classList.add("drop-hover");
+  }
+}
+
+export function handlePointerUp(e) {
+  // Clear Potential
+  potentialDragTarget = null;
+
+  if (!dragClone) {
+    // It was a Click!
+    // Allow native click event to fire.
+    return;
+  }
+
+  // It was a Drag!
+  e.preventDefault(); // Stop click from firing on drop target (optional, but good practice)
+
+  const elements = document.elementsFromPoint(e.clientX, e.clientY);
+  const dropTarget = elements.find(
+    (el) =>
+      (el.classList.contains("sudoku-chunk-slot") ||
+        el.classList.contains("collected-piece")) &&
+      el !== selectedPieceElement &&
+      el.dataset.slotIndex !== "4",
+  );
+
+  if (dropTarget) {
+    // Execute Move/Swap
+    // 1. Get Source Content (from dragClone or source)
+    // Source is `selectedPieceElement`
+
+    const sourceContent =
+      selectedPieceElement.querySelector(".mini-sudoku-grid");
+    const targetContent = dropTarget.querySelector(".mini-sudoku-grid"); // Might be null
+
+    if (sourceContent) {
+      // Move Source -> Target
+      dropTarget.innerHTML = "";
+      dropTarget.appendChild(sourceContent);
+      dropTarget.classList.remove("placeholder", "filled");
+      dropTarget.classList.add("filled"); // It has content now
+      // If dropTarget was a placeholder, remove placeholder class
+
+      if (targetContent) {
+        // Swap: Target Content -> Source
+        selectedPieceElement.innerHTML = "";
+        selectedPieceElement.appendChild(targetContent);
+        selectedPieceElement.classList.add("filled");
+        selectedPieceElement.classList.remove("placeholder");
+      } else {
+        // Target empty: Source becomes empty
+        // If source is slot, make empty
+        if (selectedPieceElement.classList.contains("sudoku-chunk-slot")) {
+          selectedPieceElement.classList.remove("filled");
+        } else {
+          // If source is panel, make placeholder
+          selectedPieceElement.classList.add("placeholder");
+          delete selectedPieceElement.dataset.chunkIndex; // Remove ID
+        }
+      }
+
+      // If dropping INTO Panel (and target was placeholder)
+      // We need to ensure we set the ID on the target container
+      if (dropTarget.classList.contains("collected-piece")) {
+        const newContent = dropTarget.querySelector(".mini-sudoku-grid");
+        if (newContent && newContent.dataset.chunkIndex) {
+          dropTarget.dataset.chunkIndex = newContent.dataset.chunkIndex;
+        }
+      }
+    }
+
+    // Check Board State after drop
+    checkBoardCompletion();
+  }
+
+  // Cleanup
+  dragClone.remove();
+  dragClone = null;
+  if (selectedPieceElement)
+    selectedPieceElement.classList.remove("dragging-source");
+  document
+    .querySelectorAll(".drop-hover")
+    .forEach((el) => el.classList.remove("drop-hover"));
+  deselectPiece();
+}
+
+function updateDragPosition(x, y) {
+  if (dragClone) {
+    dragClone.style.left = `${x - dragOffsetX}px`;
+    dragClone.style.top = `${y - dragOffsetY}px`;
+  }
+}
+
+// Debug Support
+export function debugJigsawPlace() {
+  const chunks = 9; // 0-8
+  for (let i = 0; i < chunks; i++) {
+    if (i === 4) continue; // Locked center
+
+    const slot = boardContainer.querySelector(`[data-slot-index="${i}"]`);
+    if (!slot) continue;
+
+    const currentPiece = slot.firstChild;
+    let isCorrect = false;
+
+    // Check if correct piece is already here
+    if (currentPiece && currentPiece.dataset.chunkIndex == i) {
+      isCorrect = true;
+    }
+
+    if (!isCorrect) {
+      console.log(`Debug: Fixing slot ${i}...`);
+
+      // 1. Find the Correct Piece
+      const correctGrid = Array.from(
+        document.querySelectorAll(".mini-sudoku-grid"),
+      ).find((el) => el.dataset.chunkIndex == i);
+
+      if (!correctGrid) {
+        console.error("Debug: Correct piece not found!");
+        return;
+      }
+
+      const correctPieceParent = correctGrid.parentElement;
+
+      // 2. Clear destination slot if occupied
+      if (slot.hasChildNodes()) {
+        const wrongGrid = slot.firstChild;
+
+        // SWAP
+        correctPieceParent.appendChild(wrongGrid);
+        slot.appendChild(correctGrid);
+
+        // Fix classes for Source
+        if (correctPieceParent.closest(".collected-piece")) {
+          if (correctPieceParent.classList.contains("sudoku-chunk-slot")) {
+            // Just swapped, all good
+          } else {
+            // Panel
+            correctPieceParent.classList.remove("placeholder");
+            correctPieceParent.classList.add("collected-piece");
+            correctPieceParent.style.opacity = "";
+            correctPieceParent.style.pointerEvents = "";
+            correctPieceParent.style.border = "";
+          }
+        }
+      } else {
+        // Destination Empty: Just Move
+        slot.appendChild(correctGrid);
+        slot.classList.add("filled");
+
+        // Fix Source
+        if (correctPieceParent.classList.contains("sudoku-chunk-slot")) {
+          correctPieceParent.classList.remove("filled");
+        } else {
+          // Panel
+          correctPieceParent.classList.add("placeholder");
+          correctPieceParent.style.pointerEvents = "auto";
+        }
+      }
+      // Validate immediately and Stop (Piece by Piece)
+      checkBoardCompletion();
+      return;
+    }
+  }
+  console.log("Debug: All pieces checked/fixed.");
+  checkBoardCompletion();
+}
+
+// Validation Logic
+export function checkBoardCompletion() {
+  // Guard 0: Prevent double-trigger logic
+  if (gameManager.getState().progress.currentStage !== "jigsaw") return;
+  if (boardContainer && boardContainer.classList.contains("board-complete"))
+    return;
+
+  // 1. Check vacancies
+  const slots = document.querySelectorAll(".sudoku-chunk-slot");
+  const filledCount = document.querySelectorAll(
+    ".sudoku-chunk-slot.filled",
+  ).length;
+
+  // Clear previous errors first
+  clearBoardErrors();
+  document
+    .querySelectorAll(".error-slot")
+    .forEach((el) => el.classList.remove("error-slot"));
+
+  // Only validate if FULL
+  if (filledCount < 9) return;
+
+  // 2. Reconstruct 9x9 Grid from DOM
+  // We need to map the slots 0-8 to the grid rows/cols
+  // Slot 0 (0,0) -> rows 0-2, cols 0-2
+  // Slot 1 (0,1) -> rows 0-2, cols 3-5
+  // ...
+  const currentBoard = Array.from({ length: 9 }, () => Array(9).fill(0));
+  let reconstructionFailed = false;
+
+  slots.forEach((slot) => {
+    const sIndex = parseInt(slot.dataset.slotIndex);
+    const content = slot.querySelector(".mini-sudoku-grid");
+    if (!content) {
+      reconstructionFailed = true;
+      return;
+    }
+
+    // Identify which chunk of numbers this is.
+    // NOTE: The content might be "correct" or "wrong". We need its NUMBERS.
+    // The `dataset.chunkIndex` tells us which original chunk it corresponds to.
+    const chunkId = parseInt(content.dataset.chunkIndex);
+    const state = gameManager.getState();
+    const originalChunks = getChunksFromBoard(state.data.initialPuzzle);
+    const chunkData = originalChunks[chunkId]; // 3x3 array of numbers
+
+    // Map this 3x3 chunk to the 9x9 board based on `sIndex` (Position)
+    const startRow = Math.floor(sIndex / 3) * 3;
+    const startCol = (sIndex % 3) * 3;
+
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const val = chunkData[r][c];
+        currentBoard[startRow + r][startCol + c] = val;
+      }
+    }
+  });
+
+  if (reconstructionFailed) return;
+
+  // 3. Validate
+  const conflicts = getConflicts(currentBoard);
+
+  if (conflicts.size > 0) {
+    console.log("Board Complete but Conflicts found:", conflicts);
+
+    // TRIGGER ERROR
+    if (boardContainer) {
+      boardContainer.classList.remove("board-error");
+      void boardContainer.offsetWidth; // Trigger reflow
+      boardContainer.classList.add("board-error");
+    }
+
+    // Highlight specific errors
+    // Conflict format: "row,col"
+    conflicts.forEach((coord) => {
+      const [r, c] = coord.split(",").map(Number);
+
+      // Find which slot this cell belongs to
+      const slotRow = Math.floor(r / 3);
+      const slotCol = Math.floor(c / 3);
+      const slotIndex = slotRow * 3 + slotCol;
+
+      const slot = document.querySelector(
+        `.sudoku-chunk-slot[data-slot-index="${slotIndex}"]`,
+      );
+      if (slot) {
+        // Find the specific mini-cell
+        // Local row/col within the chunk
+        const localR = r % 3;
+        const localC = c % 3;
+        // The mini-grid cells are flat list in order? The createMiniGrid creates nested?
+        // Let's check createMiniGrid: it checks gridData.forEach ...
+        // It appends cells linearly. So index = localR * 3 + localC
+        const cells = slot.querySelectorAll(".mini-cell");
+        const cellIdx = localR * 3 + localC;
+        if (cells[cellIdx]) {
+          cells[cellIdx].classList.add("error-number");
+        }
+      }
+    });
+
+    // 4. Errors persist until user interaction (timeout removed)
+    return; // Stop here
+  }
+
+  // 4. Success!
+  console.log("Jigsaw Solved Correctly!");
+
+  // Clean errors and Add Victory Animation
+  clearBoardErrors();
+  if (boardContainer) {
+    boardContainer.classList.add("board-complete");
+  } else {
+    // Fallback if variable lost reference (shouldn't happen but safe)
+    document.querySelector(".memory-board")?.classList.add("board-complete");
+  }
+
+  // Delay advance to show animation
+  setTimeout(() => {
+    const lang = getCurrentLang();
+    const t = translations[lang] || translations["es"];
+    alert(t.alert_next_sudoku);
+    gameManager.advanceStage();
+  }, 600);
+}
+
+function clearBoardErrors() {
+  if (boardContainer) boardContainer.classList.remove("board-error");
+  document
+    .querySelectorAll(".error-number")
+    .forEach((el) => el.classList.remove("error-number"));
+}

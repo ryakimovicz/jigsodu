@@ -18,6 +18,11 @@ function startApp() {
     console.log = function () {};
   }
 
+  // Handle Beta Mode (Help Button)
+  if (CONFIG.betaMode) {
+    document.body.classList.add("beta-mode");
+  }
+
   console.log("Jigsudo App Starting...");
   // gameManager initializes itself on import
   initLanguage();

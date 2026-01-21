@@ -56,6 +56,12 @@ export const translations = {
     memory_help_title: "Cómo jugar",
     memory_help_desc:
       "Encuentra los pares de bloques sudoku.<br />Cada par revelado se colocará en el tablero o en tu colección.",
+
+    // Jigsaw Game Help
+    jigsaw_help_title: "Rompecabezas",
+    jigsaw_help_desc:
+      "Arrastra las piezas de tu colección al tablero.<br />Arma el Sudoku completo para avanzar.",
+    alert_next_sudoku: "Siguiente juego: Sudoku\nPróximamente",
   },
   en: {
     app_title: "JIGSUDO",
@@ -113,5 +119,11 @@ export const translations = {
     memory_help_title: "How to play",
     memory_help_desc:
       "Find the matching Sudoku block pairs.<br />Each revealed pair will be placed on the board or in your collection.",
+
+    // Jigsaw Game Help
+    jigsaw_help_title: "Jigsaw Puzzle",
+    jigsaw_help_desc:
+      "Drag pieces from your collection to the board.<br />Assemble the full Sudoku to proceed.",
+    alert_next_sudoku: "Next game: Sudoku\nComing Soon",
   },
 };

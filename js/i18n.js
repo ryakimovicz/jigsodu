@@ -10,6 +10,7 @@ export function getCurrentLang() {
 function applyLanguage(lang) {
   if (translations[lang]) {
     currentLang = lang;
+    document.documentElement.lang = lang; // Ensure DOM reflects state for CSS/other scripts
     updateTexts();
     updateLanguageSelector(lang);
 
@@ -51,10 +52,19 @@ export function initLanguage() {
 
 function updateTexts() {
   const t = translations[currentLang];
+  const jigsawMode = document
+    .getElementById("memory-game")
+    ?.classList.contains("jigsaw-mode");
 
   // 1. Text Content
   document.querySelectorAll("[data-i18n]").forEach((el) => {
-    const key = el.getAttribute("data-i18n");
+    let key = el.getAttribute("data-i18n");
+
+    // Override mechanisms for Jigsaw Mode
+    if (jigsawMode) {
+      if (key === "game_memory") key = "jigsaw_help_title"; // Reuse for Title
+    }
+
     if (t[key]) el.textContent = t[key];
   });
 
@@ -69,6 +79,16 @@ function updateTexts() {
     const key = el.getAttribute("data-i18n-aria");
     if (t[key]) el.setAttribute("aria-label", t[key]);
   });
+
+  // Jigsaw Tooltip Special Case (Manual Override if in mode)
+  if (jigsawMode) {
+    const tooltipTitle = document.querySelector(".info-tooltip h3");
+    const tooltipDesc = document.querySelector(".info-tooltip p");
+    if (tooltipTitle && t.jigsaw_help_title)
+      tooltipTitle.textContent = t.jigsaw_help_title;
+    if (tooltipDesc && t.jigsaw_help_desc)
+      tooltipDesc.innerHTML = t.jigsaw_help_desc;
+  }
 }
 
 function updateLanguageSelector(lang) {

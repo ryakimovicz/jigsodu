@@ -125,7 +125,8 @@ button {
 }
 
 /* Visibility Trigger */
-body.debug-mode .debug-btn {
+body.debug-mode .debug-btn,
+body.beta-mode .debug-btn {
   display: block;
 }
 

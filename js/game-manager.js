@@ -80,6 +80,30 @@ export class GameManager {
     return this.state;
   }
 
+  advanceStage() {
+    const stages = ["memory", "jigsaw", "sudoku", "peaks", "search"];
+    const currentIdx = stages.indexOf(this.state.progress.currentStage);
+
+    if (currentIdx >= 0 && currentIdx < stages.length - 1) {
+      const nextStage = stages[currentIdx + 1];
+      const currentStage = this.state.progress.currentStage;
+
+      console.log(`[GameManager] Advancing: ${currentStage} -> ${nextStage}`);
+
+      // Update State
+      this.state.progress.currentStage = nextStage;
+      if (!this.state.progress.stagesCompleted.includes(currentStage)) {
+        this.state.progress.stagesCompleted.push(currentStage);
+      }
+      this.save();
+
+      // Dispatch Event
+      window.dispatchEvent(
+        new CustomEvent("stageChanged", { detail: { stage: nextStage } }),
+      );
+    }
+  }
+
   updateProgress(stage, data) {
     // Generic updater
     if (data) {
