@@ -673,3 +673,60 @@ body.dark-mode .memory-card-back {
     font-size: 12px;
   }
 }
+/* =========================================
+   Landscape Tablet / Short Desktop Adjustment
+   (Fixes cut-off cards on devices like TCL NXTPAPER 11)
+   ========================================= */
+@media (min-width: 768px) and (max-height: 850px) {
+  .memory-grid-layout {
+    padding-top: 0.5rem;
+    column-gap: 8rem; /* SEPARATE panels horizontally without pushing cards down */
+    row-gap: 1rem; /* Keep vertical spacing tight */
+    /* Columns: 130px (Left) | 220px (Board) | 130px (Right) */
+    grid-template-columns: 130px 220px 130px !important;
+    grid-template-rows: auto 1fr;
+  }
+
+  /* Hide Timer to save space */
+  #memory-timer {
+    display: none;
+  }
+
+  /* Shrink Board Space */
+  .memory-board {
+    width: 220px;
+    height: 220px;
+  }
+
+  /* 2x2 Grid for Side Panels */
+  .collected-zone {
+    min-height: 220px;
+    gap: 5px; /* Minimal separation */
+    display: grid !important;
+    grid-template-columns: 1fr 1fr; /* 2 columns */
+    grid-template-rows: auto auto; /* 2 rows implicitly */
+    align-content: center; /* Vertically center relative to board */
+    justify-content: center;
+    width: 100%;
+  }
+
+  /* Override Jigsaw Piece Size for this view */
+  .collected-piece {
+    width: 55px !important;
+    height: 55px !important;
+    font-size: 1rem !important; /* adjust text size */
+  }
+
+  /* Shrink Cards */
+  .memory-card {
+    width: 65px;
+    height: 65px;
+  }
+
+  .cards-area {
+    gap: 6px;
+    margin-top: -10px; /* Pull closer to board */
+  }
+
+  /* Adjust info tooltip triggering area if needed */
+}
