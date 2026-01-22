@@ -1,6 +1,7 @@
 /* Main Entry Point */
 import { initHome } from "./home.js";
 import { initLanguage } from "./i18n.js";
+import { initSudoku } from "./sudoku.js";
 import { gameManager } from "./game-manager.js";
 import { CONFIG } from "./config.js"; // Keep CONFIG for displayVersion
 
@@ -27,6 +28,7 @@ function startApp() {
   // gameManager initializes itself on import
   initLanguage();
   initHome();
+  initSudoku();
 }
 
 // Wait for DOM to be ready

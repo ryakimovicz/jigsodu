@@ -1,5 +1,6 @@
 import { gameManager } from "./game-manager.js";
 import { translations } from "./translations.js";
+import { transitionToSudoku } from "./sudoku.js";
 import { getChunksFromBoard, createMiniGrid } from "./memory.js";
 import { getConflicts } from "./sudoku-logic.js";
 import { getCurrentLang } from "./i18n.js";
@@ -515,31 +516,6 @@ export function transitionToJigsaw() {
     }, 500);
   }
 
-  // 1.5 LOCK TIMER POSITION
-  const timer = document.getElementById("memory-timer");
-  if (timer) {
-    const rect = timer.getBoundingClientRect();
-    const winWidth = window.innerWidth;
-    const winHeight = window.innerHeight;
-
-    // Use BOTTOM for vertical to stick to footer
-    const bottomGap = winHeight - rect.bottom;
-
-    // Use CENTER % for horizontal
-    const centerX = rect.left + rect.width / 2;
-    const leftPercent = (centerX / winWidth) * 100;
-
-    timer.style.position = "fixed";
-    timer.style.left = `${leftPercent}%`;
-    timer.style.bottom = `${bottomGap}px`;
-    timer.style.top = "auto";
-    timer.style.transform = "translateX(-50%)";
-    // timer.style.width = `${rect.width}px`; // No fixed width allowed, let it grow
-    timer.style.whiteSpace = "nowrap"; // Force single line
-    timer.style.margin = "0";
-    timer.style.zIndex = "10005"; // Ensure visibility
-  }
-
   // 2. Add Jigsaw Mode Class
   if (memorySection) {
     if (document.startViewTransition) {
@@ -1040,10 +1016,7 @@ export function checkBoardCompletion() {
 
   // Delay advance to show animation
   setTimeout(() => {
-    const lang = getCurrentLang();
-    const t = translations[lang] || translations["es"];
-    alert(t.alert_next_sudoku);
-    gameManager.advanceStage();
+    transitionToSudoku();
   }, 600);
 }
 

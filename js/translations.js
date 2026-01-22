@@ -61,6 +61,9 @@ export const translations = {
     jigsaw_help_title: "Rompecabezas",
     jigsaw_help_desc:
       "Arrastra las piezas de tu colección al tablero.<br />Arma el Sudoku completo para avanzar.",
+    sudoku_help_title: "Sudoku",
+    sudoku_help_desc:
+      "Completa la cuadrícula con los números del 1 al 9.<br />Cada fila, columna y bloque de 3x3 debe contener todos los números sin repetirlos.",
     alert_next_sudoku: "Siguiente juego: Sudoku\nPróximamente",
   },
   en: {
@@ -124,6 +127,9 @@ export const translations = {
     jigsaw_help_title: "Jigsaw Puzzle",
     jigsaw_help_desc:
       "Drag pieces from your collection to the board.<br />Assemble the full Sudoku to proceed.",
+    sudoku_help_title: "Sudoku",
+    sudoku_help_desc:
+      "Complete the grid with numbers from 1 to 9.<br />Each row, column and 3x3 block must contain all numbers without repeating them.",
     alert_next_sudoku: "Next game: Sudoku\nComing Soon",
   },
 };

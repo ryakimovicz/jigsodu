@@ -579,7 +579,7 @@ body.dark-mode .memory-card-back {
     flex: 0 0 auto; /* Don't grow */
   }
 
-  /* HIDE TIMER ON MOBILE */
+  /* TIMER POSITIONING FIX - Hidden for mobile to save space */
   .memory-timer {
     display: none;
   }
@@ -641,6 +641,7 @@ body.dark-mode .memory-card-back {
     flex: 1; /* Take all remaining vertical space */
     min-height: 0;
     width: 100%;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Bring Header above test panels too */
@@ -660,6 +661,7 @@ body.dark-mode .memory-card-back {
     justify-content: center;
     padding-top: 0;
     margin-top: 0; /* Align tight to title */
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .memory-board {
@@ -674,10 +676,12 @@ body.dark-mode .memory-card-back {
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Expand Board vertical budget when in Jigsaw Mode to allow growth */
-  .jigsaw-mode .memory-board {
-    width: min(95vw, calc(50dvh - var(--header-height) - 50px));
-    max-height: calc(50dvh - var(--header-height) - 50px);
+  /* Expand Board vertical budget when in Jigsaw or Sudoku Mode to allow growth */
+  /* Added max(260px, ...) to ensure it doesn't shrink too much on small screens */
+  .jigsaw-mode .memory-board,
+  .sudoku-mode .memory-board {
+    width: min(95vw, max(260px, calc(50dvh - var(--header-height) - 50px)));
+    max-height: 100%; /* Relaxed to allow the 260px minimum */
   }
 
   /* Wrapper for Collected Zones */
@@ -749,7 +753,7 @@ body.dark-mode .memory-card-back {
     max-width: 1000px; /* Prevent over-stretch */
   }
 
-  /* Hide Timer to save space */
+  /* Timer visibility hidden on short desktop to maximize space */
   #memory-timer {
     display: none;
   }
@@ -768,10 +772,11 @@ body.dark-mode .memory-card-back {
       margin 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Enlarged Board (Jigsaw) */
-  .jigsaw-mode .memory-board {
-    width: 380px;
-    height: 380px;
+  /* Enlarged Board (Jigsaw & Sudoku) */
+  .jigsaw-mode .memory-board,
+  .sudoku-mode .memory-board {
+    width: 380px !important;
+    height: 380px !important;
   }
 
   /* Adjust grid columns for larger Jigsaw board */

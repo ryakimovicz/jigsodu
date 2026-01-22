@@ -56,14 +56,14 @@
   cursor: pointer; /* Valid Move/Swap Target */
 }
 
-/* Locked Center Place always locked */
-.sudoku-chunk-slot[data-slot-index="4"] {
-  cursor: not-allowed !important;
+/* Locked Center Place always locked during Jigsaw */
+.jigsaw-mode .sudoku-chunk-slot[data-slot-index="4"] {
+  cursor: not-allowed;
   position: relative; /* Ensure pseudo-element is positioned relative to this */
 }
 
 /* Overlay effect to ensure it is visible ON TOP of the piece */
-.sudoku-chunk-slot[data-slot-index="4"]::after {
+.jigsaw-mode .sudoku-chunk-slot[data-slot-index="4"]::after {
   content: "";
   position: absolute;
   top: 0;
@@ -79,7 +79,7 @@
 }
 
 /* Dark Mode Override for Center Slot */
-body.dark-mode .sudoku-chunk-slot[data-slot-index="4"]::after {
+.dark-mode .jigsaw-mode .sudoku-chunk-slot[data-slot-index="4"]::after {
   background: rgba(0, 0, 0, 0.3); /* Darker for proper contrast in Dark Mode */
   box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6);
 }
@@ -118,7 +118,8 @@ body.dark-mode .sudoku-chunk-slot[data-slot-index="4"]::after {
 
 /* Standard Desktop Jigsaw Expansion (769px - 1099px, Height > 850px) */
 @media (min-width: 769px) and (max-width: 1099px) and (min-height: 851px) {
-  .jigsaw-mode .memory-board {
+  .jigsaw-mode .memory-board,
+  .sudoku-mode .memory-board {
     width: 400px !important;
     height: 400px !important;
   }
@@ -130,20 +131,30 @@ body.dark-mode .sudoku-chunk-slot[data-slot-index="4"]::after {
   }
 
   /* Adjust grid columns for larger Jigsaw board */
-  .jigsaw-mode .memory-grid-layout {
+  .jigsaw-mode .memory-grid-layout,
+  .sudoku-mode .memory-grid-layout {
     grid-template-columns: 120px 400px 120px !important;
     column-gap: 4rem !important;
     max-width: 1250px !important;
   }
 
-  .jigsaw-mode .collected-zone {
+  /* Expand Board vertical budget when in Jigsaw or Sudoku Mode to allow growth */
+  .jigsaw-mode .memory-board,
+  .sudoku-mode .memory-board {
+    width: 400px !important;
+    height: 400px !important;
+  }
+
+  .jigsaw-mode .collected-zone,
+  .sudoku-mode .collected-zone {
     gap: 12px !important;
   }
 }
 
 /* Large Desktop Jigsaw Expansion (Scale Up only if there is enough height) */
 @media (min-width: 1100px) and (min-height: 851px) {
-  .jigsaw-mode .memory-board {
+  .jigsaw-mode .memory-board,
+  .sudoku-mode .memory-board {
     width: 420px !important; /* Force larger size */
     height: 420px !important;
   }
@@ -155,13 +166,15 @@ body.dark-mode .sudoku-chunk-slot[data-slot-index="4"]::after {
     font-size: 2rem;
   }
 
-  .jigsaw-mode .collected-wrapper {
+  .jigsaw-mode .collected-wrapper,
+  .sudoku-mode .collected-wrapper {
     gap: 15px;
     padding: 10px;
   }
 
   /* Adjust layout to fit larger board */
-  .jigsaw-mode .memory-grid-layout {
+  .jigsaw-mode .memory-grid-layout,
+  .sudoku-mode .memory-grid-layout {
     gap: 2rem;
     /* Unlock the middle column to fit the 420px board */
     grid-template-columns: 110px 420px 110px;

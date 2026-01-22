@@ -80,7 +80,7 @@ function updateTexts() {
     if (t[key]) el.setAttribute("aria-label", t[key]);
   });
 
-  // Jigsaw Tooltip Special Case (Manual Override if in mode)
+  // Jigsaw/Sudoku Tooltip Special Case (Manual Override if in mode)
   if (jigsawMode) {
     const tooltipTitle = document.querySelector(".info-tooltip h3");
     const tooltipDesc = document.querySelector(".info-tooltip p");
@@ -88,6 +88,15 @@ function updateTexts() {
       tooltipTitle.textContent = t.jigsaw_help_title;
     if (tooltipDesc && t.jigsaw_help_desc)
       tooltipDesc.innerHTML = t.jigsaw_help_desc;
+  } else if (
+    document.getElementById("memory-game")?.classList.contains("sudoku-mode")
+  ) {
+    const tooltipTitle = document.querySelector(".info-tooltip h3");
+    const tooltipDesc = document.querySelector(".info-tooltip p");
+    if (tooltipTitle && t.sudoku_help_title)
+      tooltipTitle.textContent = t.sudoku_help_title;
+    if (tooltipDesc && t.sudoku_help_desc)
+      tooltipDesc.innerHTML = t.sudoku_help_desc;
   }
 }
 

@@ -1,1 +1,273 @@
-/* Sudoku styles */
+/* Sudoku Main Layout - Unified Vertical Stack for ALL devices */
+.sudoku-mode .memory-grid-layout {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important; /* Horizontal centering */
+  justify-content: flex-start !important; /* Pull to top */
+  gap: 15px !important; /* Tight spacing "just below board" */
+  width: 100% !important;
+  max-width: 1000px !important;
+  margin: 0 auto !important;
+  padding-top: 1rem !important; /* Maintain desktop breathing room */
+}
+
+/* Ensure side panels and cards are completely gone */
+.sudoku-mode .collected-zone,
+.sudoku-mode .collected-wrapper,
+.sudoku-mode .cards-area {
+  display: none !important;
+}
+
+/* Center elements within the stack */
+.sudoku-mode .board-wrapper {
+  order: 1 !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.sudoku-controls {
+  order: 2 !important; /* Always below board (order 1) */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto 20px auto !important; /* Center and add safe bottom margin */
+  animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.sudoku-controls.hidden {
+  display: none !important;
+}
+
+.control-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Secondary row (Actions) */
+.btn-sudoku-action {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  max-width: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-sudoku-action:hover {
+  background: var(--bg-secondary);
+  transform: translateY(-2px);
+}
+
+.btn-sudoku-action:active {
+  transform: translateY(0);
+}
+
+.btn-sudoku-action.active {
+  background: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+}
+
+/* Primary row (Numbers) - Default: Single Row (9x1) */
+.numbers {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+.sudoku-num {
+  aspect-ratio: 1;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 3x3 Grid & Height-based Scaling - Mobile Transition */
+@media (max-width: 768px) {
+  .sudoku-mode .memory-grid-layout {
+    flex: 1 !important; /* Take all available space between header and timer */
+    min-height: 0;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding-bottom: 20px !important; /* Reduced to leave room for timer */
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* 3x3 Grid & Height-based Scaling - Large Desktop */
+@media (min-width: 1100px) and (min-height: 851px) {
+  .sudoku-mode .memory-grid-layout {
+    flex: 1 !important;
+    min-height: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    padding-bottom: 30px !important; /* Room for timer */
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Integrated 3-column Keypad (Actions + Numbers) for Mobile/Large Desktop */
+@media (max-width: 768px), (min-width: 1100px) and (min-height: 851px) {
+  .sudoku-controls {
+    flex: 1;
+    min-height: 0;
+    max-height: 45dvh; /* Slightly more space for 4 rows */
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-rows: repeat(
+      4,
+      1fr
+    ) !important; /* 1 (actions) + 3 (numbers) */
+    gap: 8px !important;
+    width: auto !important;
+    aspect-ratio: 3 / 4 !important;
+    margin: 0 auto !important;
+    height: 100% !important;
+    align-self: center !important;
+    justify-content: center !important; /* Center the grid content horizontally */
+    justify-items: center !important; /* Center items in their cells */
+  }
+
+  /* Limit keypad size on Large Desktop to avoid over-scaling */
+  @media (min-width: 1100px) and (min-height: 851px) {
+    .sudoku-controls {
+      max-width: 200px !important;
+      max-height: 267px !important;
+    }
+  }
+
+  /* Unbox buttons to make them direct children of the 4x3 grid */
+  .control-row {
+    display: contents !important;
+  }
+
+  .btn-sudoku-action,
+  .sudoku-num {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    aspect-ratio: 1 / 1 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    font-size: clamp(1.1rem, 3.5vh, 1.6rem) !important;
+  }
+
+  /* Specific styles for action buttons in grid */
+  .btn-sudoku-action {
+    background: var(--bg-tertiary) !important;
+    max-width: none !important;
+    border-radius: 8px !important;
+  }
+}
+
+.dark-mode .sudoku-num {
+  background: #333;
+  border-color: #444;
+  color: #eee;
+}
+
+.sudoku-num:hover {
+  background: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+  transform: scale(1.1);
+}
+
+.sudoku-num:active {
+  transform: scale(0.95);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .sudoku-num {
+    font-size: 1.1rem;
+  }
+
+  .btn-sudoku-action {
+    padding: 8px 15px;
+  }
+}
+
+/* Cell Selection */
+.sudoku-mode .mini-cell:not(.has-number),
+.sudoku-mode .mini-cell.user-filled {
+  cursor: pointer;
+}
+
+.mini-cell.selected-cell {
+  background: rgba(var(--accent-rgb), 0.2) !important;
+  outline: 2px solid var(--accent-color);
+  outline-offset: -2px;
+  z-index: 5;
+}
+
+.mini-cell.user-filled {
+  color: var(--accent-color);
+  font-weight: 900;
+}
+
+/* Notes Grid */
+.notes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: 100%;
+  height: 100%;
+  padding: 2px;
+  box-sizing: border-box;
+}
+
+.note-slot {
+  font-size: 8px; /* Use container relative sizing if needed: 3cqw? */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #666;
+  line-height: 1;
+}
+
+.dark-mode .note-slot {
+  color: #aaa;
+}
+
+.mini-cell {
+  position: relative; /* For notes-grid positioning */
+}
