@@ -16,22 +16,30 @@ body.dark-mode {
 
 #memory-game {
   width: 100%;
-  width: 100%;
   flex: 1; /* Take remaining space */
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 1rem;
-  padding-top: calc(
-    var(--header-height) + 0.5rem
-  ); /* Slightly less top padding */
+  padding-top: calc(var(--header-height) + 0.5rem);
   box-sizing: border-box;
   animation: fadeIn 0.5s ease-in-out;
   user-select: none;
   -webkit-user-select: none;
-  overflow: hidden; /* Prevent scroll */
+  overflow: hidden; /* Prevent scroll and contain pieces during expansion */
+  position: relative;
 }
 
+/* View Transition API Overrides (Modern Browsers) */
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.8s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+::view-transition-group(board-main) {
+  animation-duration: 0.8s;
+}
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -188,8 +196,10 @@ body:not(.dark-mode) .memory-timer {
 
   /* Animate layout changes */
   transition:
-    grid-template-columns 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-    gap 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    grid-template-columns 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+    column-gap 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+    gap 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+    max-width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Grid Areas */
@@ -257,7 +267,7 @@ body:not(.dark-mode) .memory-timer {
   justify-content: center;
   align-items: center;
   position: relative;
-  transition: all 0.3s ease;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sudoku-chunk-slot.filled {
@@ -616,29 +626,31 @@ body.dark-mode .memory-card-back {
   .board-wrapper {
     order: 1;
     width: 100%;
-    /* Maximize height within Red Panel (43.5dvh) minus Title (~45px) */
-    /* Formula: RedPanelHeight - TitleHeight */
-    height: calc(43.5dvh - var(--header-height) - 45px);
+    /* Tight layout: wrapper only takes what board needs */
+    height: auto;
     display: flex;
     align-items: flex-start; /* Start below title */
     justify-content: center;
     padding-top: 0;
     margin-top: 0; /* Align tight to title */
-    transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  /* Expand Board vertical budget when in Jigsaw Mode to allow growth */
-  .jigsaw-mode .board-wrapper {
-    height: calc(50dvh - var(--header-height) - 45px);
   }
 
   .memory-board {
-    /* Maximize Size Strategy: Fill Height, matching Aspect Ratio */
-    height: 100%; /* Fill the available vertical space */
-    width: auto; /* Width adjusts to keep square */
+    /* Maximize Size Strategy: Fit the smaller of (95% width) or (Vertical budget) */
+    width: min(95vw, calc(43.5dvh - var(--header-height) - 50px));
+    height: auto;
+    max-width: 100%;
+    /* VERTICAL BUDGET: Exact bottom of red panel (43.5dvh) minus title area (~50px) */
+    max-height: calc(43.5dvh - var(--header-height) - 50px);
     aspect-ratio: 1/1; /* Ensure squareness */
-    max-width: 95vw; /* Prevent horizontal overflow */
-    max-height: 100%; /* Strict safety */
+    object-fit: contain; /* Prevent distortion */
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Expand Board vertical budget when in Jigsaw Mode to allow growth */
+  .jigsaw-mode .memory-board {
+    width: min(95vw, calc(50dvh - var(--header-height) - 50px));
+    max-height: calc(50dvh - var(--header-height) - 50px);
   }
 
   /* Wrapper for Collected Zones */
@@ -696,6 +708,7 @@ body.dark-mode .memory-card-back {
    ========================================= */
 @media (min-width: 769px) and (max-height: 850px) {
   .memory-grid-layout {
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     padding-top: 0.5rem;
     column-gap: 8rem; /* SEPARATE panels horizontally without pushing cards down */
     row-gap: 1rem;
@@ -710,41 +723,80 @@ body.dark-mode .memory-card-back {
     display: none;
   }
 
-  /* Shrink Board Space */
+  /* Shrink Board Space (Memory) */
   .memory-board {
     width: 220px;
     height: 220px;
+    aspect-ratio: 1 / 1;
+    align-self: center;
+    justify-self: center;
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* 2x2 Grid for Side Panels */
+  /* Enlarged Board (Jigsaw) */
+  .jigsaw-mode .memory-board {
+    width: 380px;
+    height: 380px;
+  }
+
+  /* Adjust grid columns for larger Jigsaw board */
+  .jigsaw-mode.memory-grid-layout {
+    grid-template-columns: 110px 380px 110px !important;
+    column-gap: 15rem; /* UNMISTAKABLE separation */
+    max-width: 1400px; /* Expand container to allow pieces to move out */
+  }
+
+  .jigsaw-mode .collected-zone.left {
+    margin-right: 0 !important; /* Cancel legacy "pull close" negative margins */
+  }
+  .jigsaw-mode .collected-zone.right {
+    margin-left: 0 !important; /* Cancel legacy "pull close" negative margins */
+  }
+
+  /* 2x2 Grid for Side Panels (Using Grid for better reflow animation) */
   .collected-zone {
     min-height: 220px;
-    gap: 5px; /* Minimal separation */
+    gap: 12px;
     display: grid !important;
-    grid-template-columns: 1fr 1fr; /* 2 columns */
-    grid-template-rows: auto auto; /* 2 rows implicitly */
-    align-content: center; /* Vertically center relative to board */
+    grid-template-columns: 1fr 1fr; /* 2 columns in Memory */
+    align-content: center;
     justify-content: center;
     width: 100%;
+    max-width: 160px; /* Room for 2 columns */
+    margin: 0 auto;
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Override Jigsaw Piece Size for this view */
+  /* Shifting pieces to 1 column in Jigsaw Mode */
+  .jigsaw-mode .collected-zone {
+    grid-template-columns: 1fr; /* Single column */
+    max-width: 95px; /* Strictly force 1 column */
+    gap: 15px;
+  }
+
+  /* Override Piece Size for this view (Memory Default) */
   .collected-piece {
-    width: 55px !important;
-    height: 55px !important;
-    font-size: 1rem !important; /* adjust text size */
+    width: 55px;
+    height: 55px;
+    font-size: 1rem;
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Shrink Cards */
-  .memory-card {
-    width: 65px;
-    height: 65px;
+  /* Enlarged Pieces (Jigsaw Mode) */
+  .jigsaw-mode .collected-piece {
+    width: 85px !important;
+    height: 85px !important;
+    font-size: 1.5rem !important;
   }
 
   .cards-area {
-    gap: 6px;
-    margin-top: -10px; /* Pull closer to board */
+    order: 3;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    grid-column: 1 / 4; /* SPAN FULL WIDTH (over left, board, and right) */
+    width: 100%;
+    gap: 8px;
+    margin-top: 0;
   }
-
-  /* Adjust info tooltip triggering area if needed */
 }

@@ -170,14 +170,18 @@ function debugAutoMatch() {
   }
 }
 
-// Mobile Responsive Sizing for Memory Cards (Green Zone)
-// Mobile Responsive Sizing for Memory Cards (Green Zone)
+// Mobile/Tablet Responsive Sizing for Memory Cards
 function fitMemoryCards() {
   const cardsContainer = document.getElementById("memory-cards");
   if (!cardsContainer) return;
 
-  // Desktop Cleanup / Guard
-  if (window.innerWidth > 768) {
+  const vw = window.innerWidth;
+  const vh = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
+
+  // Desktop Cleanup / Guard (Only purely desktop wide+tall screens stay static)
+  if (vw > 768 && vh >= 850) {
     cardsContainer.style = "";
     const cards = document.querySelectorAll(".memory-card");
     cards.forEach((card) => {
@@ -188,44 +192,36 @@ function fitMemoryCards() {
     return;
   }
 
-  // Mobile Logic
-  // Use visualViewport if available to account for virtual keybord/footer overlays
-  const vh = window.visualViewport
-    ? window.visualViewport.height
-    : window.innerHeight;
+  // Sizing Strategy:
+  let availableHeight = 0;
+  let availableWidth = cardsContainer.clientWidth || vw;
 
-  // Available Height Strategy:
-  // 1. Measure the container itself (best if flex works)
-  // 2. Measure the green panel (good reference)
-  // 3. Fallback calculation
+  if (vw <= 768) {
+    // --- Mobile Logic ---
+    const greenPanel = document.querySelector(".test-panel.green");
+    const h2 = greenPanel ? greenPanel.clientHeight : 0;
+    const h3 = vh * 0.4;
+    availableHeight = h2 > 0 ? h2 : h3;
+    availableHeight -= 5; // Minimal safety buffer
+  } else {
+    // --- Tablet/Laptop Short Logic ---
+    // Target space: From Board Bottom to Footer Top
+    const board = document.getElementById("memory-board");
+    const footer = document.querySelector("footer");
 
-  // Strategy 1: Container ClientHeight (since we set flex:1 in CSS)
-  let h1 = cardsContainer.clientHeight;
-  if (h1 < 50) h1 = 9999;
-
-  // Strategy 2: Green Panel (Preferred Source of Truth)
-  let h2 = 0;
-  const greenPanel = document.querySelector(".test-panel.green");
-  if (greenPanel) {
-    h2 = greenPanel.clientHeight;
+    if (board && footer) {
+      const boardRect = board.getBoundingClientRect();
+      const footerRect = footer.getBoundingClientRect();
+      // Calculate gap between board and footer
+      // Using 20px buffer to avoid touching footer
+      availableHeight = footerRect.top - boardRect.bottom - 20;
+    } else {
+      // Fallback if elements not measured
+      availableHeight = vh * 0.35;
+    }
   }
 
-  // Strategy 3: Math Fallback (Only used if Green Panel is missing)
-  // Approximate remaining space if we can't measure DOM
-  const h3 = vh * 0.4;
-
-  // Selection Logic:
-  // If we found the Green Panel, trust it explicitly (User wants to maximize usage of this zone).
-  // Otherwise, use fallback.
-  let availableHeight = h2 > 0 ? h2 : h3;
-
-  // Apply Minimal Safety Buffer to avoid edge touching
-  // Reduced to almost zero to maximize usage as requested
-  availableHeight -= 5;
-
   if (availableHeight < 50) availableHeight = 100; // Sanity check
-
-  const availableWidth = cardsContainer.clientWidth || window.innerWidth;
 
   // Padding/Gap settings - Minimal
   const gap = 4;
@@ -235,8 +231,8 @@ function fitMemoryCards() {
 
   let bestConfig = { size: 0, cols: 3 };
 
-  // Iterate to find best fit
-  for (let cols = 3; cols <= 6; cols++) {
+  // Iterate to find best fit (Restrict to 4-6 columns per user request)
+  for (let cols = 4; cols <= 6; cols++) {
     const rows = Math.ceil(totalCards / cols);
     // Calc max width per card
     const wSize = (availableWidth - padding * 2 - (cols - 1) * gap) / cols;
@@ -273,6 +269,12 @@ function fitMemoryCards() {
 
   // Overflow handling
   cardsContainer.style.overflow = "hidden";
+
+  // Force wrap at specific columns (4-6) to prevent long rows on wide screens
+  const containerMaxWidth =
+    finalSize * bestConfig.cols + gap * (bestConfig.cols - 1) + padding * 2;
+  cardsContainer.style.maxWidth = `${containerMaxWidth}px`;
+  cardsContainer.style.margin = "0 auto"; // Center the container if width is restricted
 
   const cards = document.querySelectorAll(".memory-card");
   cards.forEach((card) => {

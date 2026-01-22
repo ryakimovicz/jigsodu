@@ -109,10 +109,15 @@ export function fitCollectedPieces() {
 
   // DESKTOP RESET: Trust CSS > 768px (except for laptop specific override handled in CSS)
   if (window.innerWidth > 768) {
-    wrapper.style = "";
-    collectedLeft.style = "";
-    collectedRight.style = "";
-    pieces.forEach((p) => (p.style = ""));
+    wrapper.style.cssText = "";
+    collectedLeft.style.cssText = "";
+    collectedRight.style.cssText = "";
+    pieces.forEach((p) => {
+      // Preserve view-transition-name if exists
+      const vtName = p.style.viewTransitionName;
+      p.style.cssText = "";
+      if (vtName) p.style.viewTransitionName = vtName;
+    });
     return;
   }
 
@@ -494,15 +499,21 @@ export function transitionToJigsaw() {
   // 2. Add Jigsaw Mode Class
   if (memorySection) {
     if (document.startViewTransition) {
-      const pieces = document.querySelectorAll(".collected-piece");
-      pieces.forEach((p, i) => {
-        const chunkIndex = p.dataset.chunkIndex || i;
-        if (chunkIndex !== undefined)
-          p.style.viewTransitionName = `piece-${chunkIndex}`;
+      const leftPieces = collectedLeft.querySelectorAll(".collected-piece");
+      const rightPieces = collectedRight.querySelectorAll(".collected-piece");
+
+      leftPieces.forEach((p, i) => {
+        p.style.viewTransitionName = `piece-left-${i}`;
+      });
+      rightPieces.forEach((p, i) => {
+        p.style.viewTransitionName = `piece-right-${i}`;
       });
 
       const board = document.querySelector(".memory-board");
       if (board) board.style.viewTransitionName = "board-main";
+
+      const gridLayout = document.querySelector(".memory-grid-layout");
+      if (gridLayout) gridLayout.style.viewTransitionName = "main-layout";
 
       const transition = document.startViewTransition(() => {
         memorySection.classList.add("jigsaw-mode");
@@ -516,8 +527,10 @@ export function transitionToJigsaw() {
 
       transition.finished.finally(() => {
         // Clean up transition names to avoid leaks or performance issues later
-        pieces.forEach((p) => (p.style.viewTransitionName = ""));
+        leftPieces.forEach((p) => (p.style.viewTransitionName = ""));
+        rightPieces.forEach((p) => (p.style.viewTransitionName = ""));
         if (board) board.style.viewTransitionName = "";
+        if (gridLayout) gridLayout.style.viewTransitionName = "";
       });
     } else {
       memorySection.classList.add("jigsaw-mode");

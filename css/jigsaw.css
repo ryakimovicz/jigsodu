@@ -77,12 +77,11 @@ body.dark-mode .sudoku-chunk-slot[data-slot-index="4"]::after {
   box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6);
 }
 
-/* Base Transition */
 .memory-board,
 .collected-piece,
 .collected-wrapper,
 .sudoku-chunk-slot {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Hover Feedback */
@@ -110,8 +109,8 @@ body.dark-mode .sudoku-chunk-slot[data-slot-index="4"]::after {
   }
 }
 
-/* Large Desktop Jigsaw Expansion (Scale Up everything) */
-@media (min-width: 1100px) {
+/* Large Desktop Jigsaw Expansion (Scale Up only if there is enough height) */
+@media (min-width: 1100px) and (min-height: 851px) {
   .jigsaw-mode .memory-board {
     width: 420px !important; /* Force larger size */
     height: 420px !important;
@@ -147,9 +146,9 @@ body.dark-mode .sudoku-chunk-slot[data-slot-index="4"]::after {
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
   /* Enable transition for size (shrink effect) but NOT for position (lag) */
   transition:
-    width 0.3s ease,
-    height 0.3s ease,
-    transform 0.3s ease;
+    width 0.4s ease,
+    height 0.4s ease,
+    transform 0.4s ease;
 }
 
 /* Override Selected State during Drag (No glow/scale on the empty hole) */
