@@ -106,10 +106,7 @@ export function placeInPanel(chunkIndex) {
   placeholder.appendChild(createMiniGrid(chunkData, chunkIndex));
 
   placeholder.classList.remove("placeholder");
-
-  // Anim?
-  placeholder.style.opacity = "0";
-  setTimeout(() => (placeholder.style.opacity = "1"), 50);
+  placeholder.classList.add("spawn-anim");
 
   fitCollectedPieces();
 }

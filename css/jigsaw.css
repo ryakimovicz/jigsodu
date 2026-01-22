@@ -75,6 +75,7 @@
   pointer-events: none; /* Let clicks pass through (though slot is locked anyway) */
   z-index: 10;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px; /* Match the parent slot's curvature */
 }
 
 /* Dark Mode Override for Center Slot */
