@@ -131,7 +131,7 @@ body:not(.dark-mode) .memory-timer {
 
 .info-tooltip {
   position: absolute;
-  top: 130%;
+  top: 110%; /* Moved up slightly */
   left: 50%;
   transform: translateX(-50%) translateY(10px);
   background: var(--bg-paper);
@@ -148,12 +148,18 @@ body:not(.dark-mode) .memory-timer {
   pointer-events: none;
 }
 
-.info-icon-wrapper:hover .info-tooltip,
-.info-icon-wrapper.active .info-tooltip {
+/* Updated selector to trigger from title container class */
+.header-title-container.active .info-tooltip {
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(0);
-  pointer-events: auto;
+}
+
+/* Updated hover trigger (when hovering the icon container) */
+.info-icon-wrapper:hover ~ .info-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
 }
 
 .info-tooltip h3 {

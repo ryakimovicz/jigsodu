@@ -51,15 +51,16 @@ export function initMemoryGame() {
 
   // Info Icon Mobile Interaction
   const infoWrapper = document.querySelector(".info-icon-wrapper");
-  if (infoWrapper) {
+  const titleContainer = document.querySelector(".header-title-container");
+  if (infoWrapper && titleContainer) {
     infoWrapper.addEventListener("click", (e) => {
       e.stopPropagation(); // Prevent closing immediately
-      infoWrapper.classList.toggle("active");
+      titleContainer.classList.toggle("active");
     });
 
     // Close when clicking outside
     document.addEventListener("click", () => {
-      infoWrapper.classList.remove("active");
+      titleContainer.classList.remove("active");
     });
   }
 
