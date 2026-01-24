@@ -204,7 +204,7 @@ export function generateDailyGame(seed) {
 
   const solution = generateFullBoard(prng);
   const puzzle = createPuzzle(solution, prng, holesToRemove);
-  const chunks = getChunks(solution);
+  const chunks = getChunks(puzzle);
 
   return {
     seed,

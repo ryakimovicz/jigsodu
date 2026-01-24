@@ -5,6 +5,7 @@
   --card-grad-1: #cdd9e5;
   --card-grad-2: #adbac7;
   --card-text: #1e293b; /* Dark text needed for light background */
+  --sudoku-grid-line: #ccc;
 }
 
 body.dark-mode {
@@ -257,6 +258,7 @@ body:not(.dark-mode) .memory-timer {
   border-radius: 8px;
   width: 300px;
   height: 300px;
+  aspect-ratio: 1/1 !important; /* ENSURE SYMMETRY - Prevent fractional rounding differences */
   user-select: none;
   -webkit-user-select: none;
 }
@@ -411,8 +413,8 @@ body.dark-mode .memory-card-back {
   -webkit-user-select: none;
   line-height: 1; /* Tight line height */
   /* Selective borders for internal grid lines only */
-  border-right: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
+  border-right: 1px solid var(--sudoku-grid-line);
+  border-bottom: 1px solid var(--sudoku-grid-line);
   box-sizing: border-box; /* Ensure border doesn't grow the cell */
 }
 
