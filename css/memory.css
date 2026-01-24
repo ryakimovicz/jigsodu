@@ -699,7 +699,7 @@ body.dark-mode .memory-card-back {
    Landscape Tablet / Short Desktop Adjustment
    (Fixes cut-off cards on devices like TCL NXTPAPER 11)
    ========================================= */
-@media (min-width: 769px) and (max-height: 850px) {
+@media (min-width: 769px) and (max-height: 1000px) {
   #memory-game {
     padding-top: var(--header-height) !important;
     padding-bottom: var(--footer-height) !important;
@@ -833,7 +833,7 @@ body.dark-mode .memory-card-back {
     grid-template-columns: repeat(6, auto) !important;
     justify-content: center;
     gap: 8px;
-    align-self: end; /* Sit at the true bottom of the row */
+    align-self: center; /* Move closer to board by centering in the row */
     padding: 0.2rem 0; /* Minimal internal padding, grid handles the rest */
     width: 100%;
     margin: 0 auto;
@@ -841,9 +841,9 @@ body.dark-mode .memory-card-back {
   }
 
   .memory-card {
-    /* User: "puedan ser mas grandes" -> Increased range */
-    width: clamp(55px, 12vh, 85px) !important;
-    height: clamp(55px, 12vh, 85px) !important;
+    /* User: "hacer mas grandes" -> Increased range for better scale */
+    width: clamp(60px, 12.5vh, 92px) !important;
+    height: clamp(60px, 12.5vh, 92px) !important;
     flex: 0 0 auto;
     font-size: clamp(0.9rem, 2vh, 1.4rem);
   }
