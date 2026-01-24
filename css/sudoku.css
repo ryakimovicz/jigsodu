@@ -152,24 +152,28 @@
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: space-around !important;
+    justify-content: flex-start !important;
     align-items: center !important;
-    gap: 5px !important;
+    gap: 8px !important;
     padding-bottom: 5px !important; /* Minimized to reduce gap */
+    max-height: calc(
+      100dvh - var(--header-height) - var(--footer-height) - 10px
+    ) !important;
+    overflow: hidden !important;
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Ultra-Short Screens optimizations */
   @media (max-height: 660px) {
     .sudoku-mode .memory-grid-layout {
-      gap: 2px !important;
+      gap: 4px !important;
       padding-bottom: 0 !important;
       justify-content: space-between !important;
     }
     .sudoku-controls {
-      max-height: 35dvh !important;
+      max-height: 38dvh !important;
       gap: 4px !important;
-      margin-bottom: 0 !important;
+      margin-bottom: 2px !important;
     }
   }
 }
@@ -193,7 +197,7 @@
   .sudoku-controls {
     flex: 1;
     min-height: 0;
-    max-height: 35dvh; /* Conservatively reduced to 35dvh */
+    max-height: 35dvh; /* Budgeted: ~35% of height for keypad */
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     grid-template-rows: repeat(
