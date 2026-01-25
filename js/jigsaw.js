@@ -335,6 +335,7 @@ export function handlePieceSelect(pieceElement) {
 
       // Resize if needed
       fitCollectedPieces();
+      checkBoardCompletion(); // Validate board (clear errors if any)
       deselectPiece();
       return;
     }
@@ -357,6 +358,7 @@ export function handlePieceSelect(pieceElement) {
       }
 
       fitCollectedPieces();
+      checkBoardCompletion(); // Validate board (clear errors if any)
       deselectPiece();
       return;
     }
