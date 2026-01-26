@@ -92,6 +92,9 @@ export const translations = {
 
     peaks_errors: "Errores:",
     peaks_remaining: "Faltan:",
+
+    // Search
+    search_targets_title: "Secuencias:",
   },
   en: {
     app_title: "JIGSUDO",

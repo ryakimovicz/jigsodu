@@ -85,6 +85,11 @@
   width: auto !important;
   margin: 0 !important;
   padding: 0 !important;
+
+  /* FORCE VERTICAL STACKING */
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
 }
 
 /* Mobile Responsive Adjustments */

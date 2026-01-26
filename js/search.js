@@ -43,8 +43,15 @@ function renderTargets(data) {
   container.className = "search-targets-container";
 
   const title = document.createElement("h3");
+  // Set translation key
   title.setAttribute("data-i18n", "search_targets_title");
-  title.textContent = "Secuencias / Sequences:";
+
+  // Apply translation immediately if available
+  const lang = getCurrentLang();
+  const t = translations[lang];
+  title.textContent =
+    t && t.search_targets_title ? t.search_targets_title : "Secuencias:";
+
   container.appendChild(title);
 
   const list = document.createElement("div");
@@ -65,7 +72,13 @@ function renderTargets(data) {
   });
 
   container.appendChild(list);
-  gameSection.appendChild(container);
+  // Append to .board-wrapper to be "just below the board"
+  const boardWrapper = document.querySelector(".board-wrapper");
+  if (boardWrapper) {
+    boardWrapper.appendChild(container);
+  } else {
+    gameSection.appendChild(container);
+  }
 }
 
 function attachSearchListeners() {
