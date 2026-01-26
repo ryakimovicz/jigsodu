@@ -168,6 +168,7 @@ export const translations = {
     // Search Game Help
     search_help_title: "Number Search",
     search_help_desc: "Find the hidden number sequences on the board.",
+    search_targets_title: "Sequences:", // [NEW]
 
     // Modals
     modal_clear_title: "Reset Board",

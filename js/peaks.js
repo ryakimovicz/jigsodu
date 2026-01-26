@@ -3,6 +3,7 @@ import { gameManager } from "./game-manager.js";
 import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
 import { transitionToSearch } from "./search.js";
+import { getAllTargets } from "./peaks-logic.js";
 
 // State
 let peaksErrors = 0;
@@ -109,48 +110,14 @@ function prepareGameLogic() {
   targetMap = new Map();
 
   // Find all Peaks and Valleys
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 9; c++) {
-      const type = checkCellType(r, c, solvedBoard);
-      if (type) {
-        targetMap.set(`${r},${c}`, type);
-      }
-    }
-  }
+  const result = getAllTargets(solvedBoard);
+  targetMap = result.targetMap;
 
   totalTargets = targetMap.size;
   console.log(`Peaks & Valleys Ready. Found ${totalTargets} targets.`);
 }
 
-function checkCellType(row, col, board) {
-  const val = board[row][col];
-  const neighbors = getNeighbors(row, col);
-
-  // Check Peak (All neighbors are SMALLER)
-  const isPeak = neighbors.every((n) => board[n.r][n.c] < val);
-  if (isPeak) return "peak";
-
-  // Check Valley (All neighbors are LARGER)
-  const isValley = neighbors.every((n) => board[n.r][n.c] > val);
-  if (isValley) return "valley";
-
-  return null;
-}
-
-function getNeighbors(r, c) {
-  const neighbors = [];
-  for (let dr = -1; dr <= 1; dr++) {
-    for (let dc = -1; dc <= 1; dc++) {
-      if (dr === 0 && dc === 0) continue;
-      const nr = r + dr;
-      const nc = c + dc;
-      if (nr >= 0 && nr < 9 && nc >= 0 && nc < 9) {
-        neighbors.push({ r: nr, c: nc });
-      }
-    }
-  }
-  return neighbors;
-}
+// checkCellType and getNeighbors moved to peaks-logic.js
 
 function attachPeaksListeners() {
   const board = document.getElementById("memory-board");

@@ -154,3 +154,72 @@
   color: #475569 !important; /* Slate 600 */
   border-color: #334155 !important; /* Slate 700 */
 }
+
+/* =========================================
+   UI Interactions & Visuals
+   ========================================= */
+
+/* Selection Highlight */
+.search-selected {
+  background-color: rgba(var(--accent-rgb), 0.4) !important;
+  box-shadow: inset 0 0 5px var(--accent-color) !important;
+  color: var(--text-main) !important;
+  transform: scale(0.95);
+  border-radius: 50% !important; /* Make selection roundish inside the square */
+}
+
+/* Found State (Permanent) */
+.search-found-cell {
+  background-color: transparent !important;
+  color: var(--text-muted) !important;
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* Targets Container */
+.search-targets-container {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 600px;
+  text-align: center;
+  animation: fadeIn 0.5s ease;
+  order: 4 !important; /* Below board (1) and (hidden) controls */
+}
+
+.search-targets-container h3 {
+  font-family: "Lora", serif;
+  color: var(--text-main);
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+}
+
+.search-targets-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.search-target-chip {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-family: "Outfit", sans-serif;
+  font-weight: 500;
+  color: var(--text-main);
+  transition: all 0.3s ease;
+}
+
+.search-target-chip.found {
+  background: rgba(var(--accent-rgb), 0.2);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.dark-mode .search-target-chip {
+  background: #334155;
+  border-color: #475569;
+}
