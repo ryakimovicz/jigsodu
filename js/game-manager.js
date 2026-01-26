@@ -17,12 +17,23 @@ export class GameManager {
     const savedState = localStorage.getItem(this.storageKey);
 
     if (savedState) {
+      this.state = JSON.parse(savedState);
+
+      // Beta Mode Cleanups
+      if (CONFIG.betaMode) {
+        // Reset Search "Found" state on reload
+        if (this.state.search && this.state.search.found.length > 0) {
+          console.log("[GameManager] Beta Mode: Resetting found sequences.");
+          this.state.search.found = [];
+          this.save();
+        }
+      }
+
       if (CONFIG.debugMode) {
         console.log(
           `[GameManager] Loading existing game for seed ${this.currentSeed}`,
         );
       }
-      this.state = JSON.parse(savedState);
     } else {
       if (CONFIG.debugMode) {
         console.log(
