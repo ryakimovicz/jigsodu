@@ -9,6 +9,7 @@ let totalTargets = 0;
 let foundTargets = 0;
 let solvedBoard = null; // 9x9 matrix
 let targetMap = null; // "row,col" -> "peak" | "valley"
+let currentHintRow = 0;
 
 export function initPeaks() {
   console.log("Initializing Peaks Stage...");
@@ -16,6 +17,7 @@ export function initPeaks() {
   // 1. Reset State
   peaksErrors = 0;
   foundTargets = 0;
+  currentHintRow = 0; // Reset hint progress
   updateErrorCounter();
   updateRemainingCounter();
 
@@ -239,10 +241,60 @@ function updateErrorCounter() {
 function checkPeaksVictory() {
   if (foundTargets >= totalTargets) {
     console.log("Peaks Stage Complete!");
+
+    // Play Victory Animation
+    const board = document.getElementById("memory-board");
+    if (board) board.classList.add("board-complete");
+
+    // Localized Browser Alert
+    const lang = getCurrentLang();
+    const t = translations[lang];
+    const msg =
+      t.alert_next_search || "Siguiente: Sopa de Números\n(Próximamente)";
+
     // Trigger Search Stage...
     setTimeout(() => {
-      alert("¡Etapa Completada! Siguiente: Sopa de Números (Próximamente)");
+      if (board) board.classList.remove("board-complete");
+      alert(msg);
       // gameManager.advanceStage("search");
-    }, 500);
+    }, 1500); // 1.5s delay to match animation
   }
+}
+
+export function providePeaksHint() {
+  if (currentHintRow > 8) return; // Already finished or out of bounds
+
+  console.log(`Providing Hint for Row ${currentHintRow}`);
+
+  const board = document.getElementById("memory-board");
+  // Find all cells for this row
+  // We can select by iterating slots/cells but we have targetMap logic already.
+  // Better to iterate cols 0..8
+
+  for (let col = 0; col < 9; col++) {
+    const key = `${currentHintRow},${col}`;
+    const targetType = targetMap.get(key);
+
+    // Only act if there IS a target here that hasn't been found yet
+    if (targetType) {
+      // Find the specific DOM element
+      const slotIndex =
+        Math.floor(currentHintRow / 3) * 3 + Math.floor(col / 3);
+      const cellIndexInSlot = (currentHintRow % 3) * 3 + (col % 3);
+
+      const slot = board.querySelector(
+        `.sudoku-chunk-slot[data-slot-index="${slotIndex}"]`,
+      );
+      if (slot) {
+        const cells = slot.querySelectorAll(".mini-cell");
+        const cell = cells[cellIndexInSlot];
+
+        if (cell && !cell.classList.contains("peaks-found")) {
+          handleCorrectClick(cell, targetType);
+        }
+      }
+    }
+  }
+
+  currentHintRow++;
 }

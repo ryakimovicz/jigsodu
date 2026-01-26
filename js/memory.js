@@ -9,6 +9,8 @@ import {
   handlePieceSelect,
   checkBoardCompletion,
 } from "./jigsaw.js";
+import { provideHint as provideSudokuHint } from "./sudoku.js";
+import { providePeaksHint } from "./peaks.js";
 import { gameManager } from "./game-manager.js";
 import { CONFIG } from "./config.js";
 
@@ -113,18 +115,35 @@ export function initMemoryGame() {
   // Debug Button matching
   const debugBtn = document.getElementById("debug-help-btn");
   if (debugBtn) {
-    debugBtn.onclick = debugAutoMatch;
+    debugBtn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log("Debug button clicked");
+      debugAutoMatch();
+    };
   }
 }
 
 function debugAutoMatch() {
   const gameSection = document.getElementById("memory-game");
-  if (gameSection && gameSection.classList.contains("jigsaw-mode")) {
+  if (!gameSection) return;
+
+  if (gameSection.classList.contains("jigsaw-mode")) {
     debugJigsawPlace();
     return;
   }
 
-  // 1. Find unmatched chunks
+  if (gameSection.classList.contains("sudoku-mode")) {
+    provideSudokuHint();
+    return;
+  }
+
+  if (gameSection.classList.contains("peaks-mode")) {
+    providePeaksHint();
+    return;
+  }
+
+  // 1. Find unmatched chunks (Memory Logic)
   const availableCards = Array.from(
     document.querySelectorAll(".memory-card:not(.matched)"),
   );

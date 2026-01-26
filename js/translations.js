@@ -70,6 +70,7 @@ export const translations = {
     alert_next_sudoku: "Siguiente juego: Sudoku\nPróximamente",
     alert_next_sudoku: "Siguiente juego: Sudoku\nPróximamente",
     alert_next_peaks: "Siguiente juego: Picos y Valles\nPróximamente",
+    alert_next_search: "Siguiente juego: Sopa de Números\nPróximamente",
 
     // Modals
     modal_clear_title: "Reiniciar Tablero",
@@ -155,7 +156,9 @@ export const translations = {
     sudoku_help_desc:
       "Complete the grid with numbers from 1 to 9.<br />Each row, column and 3x3 block must contain all numbers without repeating them.",
     alert_next_sudoku: "Next game: Sudoku\nComing Soon",
+    alert_next_sudoku: "Next game: Sudoku\nComing Soon",
     alert_next_peaks: "Next game: Peaks & Valleys\nComing Soon",
+    alert_next_search: "Next game: Number Search\nComing Soon",
 
     // Modals
     modal_clear_title: "Reset Board",

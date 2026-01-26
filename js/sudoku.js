@@ -111,10 +111,7 @@ export function initSudoku() {
     ?.addEventListener("click", confirmClearBoard);
   document.getElementById("sudoku-back")?.addEventListener("click", handleUndo);
 
-  const helpBtn = document.getElementById("debug-help-btn");
-  if (helpBtn) {
-    helpBtn.addEventListener("click", provideHint);
-  }
+  /* Help button handled centrally by memory.js */
 
   // Board cell selection
   const board = document.getElementById("memory-board");
@@ -724,7 +721,8 @@ function handleSudokuWin() {
   }
 }
 
-function provideHint() {
+export function provideHint() {
+  console.log("provideHint called");
   const gameSection = document.getElementById("memory-game");
   if (!gameSection || !gameSection.classList.contains("sudoku-mode")) return;
 
