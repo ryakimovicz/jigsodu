@@ -1,1 +1,6 @@
 /* Peaks and Valleys styles */
+
+/* In Peaks mode, user numbers become standard numbers */
+.peaks-mode .mini-cell.user-filled {
+  color: var(--text-main);
+}

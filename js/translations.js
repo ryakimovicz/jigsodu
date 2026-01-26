@@ -76,6 +76,11 @@ export const translations = {
     modal_dont_ask: "No volver a preguntar",
     btn_cancel: "Cancelar",
     btn_clear: "Borrar Todo",
+
+    // Peaks Game Help
+    peaks_help_title: "Picos y Valles",
+    peaks_help_desc:
+      "Encuentra los <strong>Picos</strong> (números mayores que todos sus vecinos) y los <strong>Valles</strong> (números menores que todos sus vecinos).",
   },
   en: {
     app_title: "JIGSUDO",
@@ -152,5 +157,10 @@ export const translations = {
     modal_dont_ask: "Don't ask again",
     btn_cancel: "Cancel",
     btn_clear: "Clear All",
+
+    // Peaks Game Help
+    peaks_help_title: "Peaks & Valleys",
+    peaks_help_desc:
+      "Find the <strong>Peaks</strong> (numbers with no larger neighbors around them) and <strong>Valleys</strong> (numbers with no smaller neighbors around them).",
   },
 };
