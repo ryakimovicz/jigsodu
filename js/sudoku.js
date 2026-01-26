@@ -736,42 +736,50 @@ function provideHint() {
   const state = gameManager.getState();
   const solution = state.data.solution;
 
-  // 1. Gather all cells with their mapped coordinates
-  const allCells = [];
-  slots.forEach((slot) => {
+  // Find the first block that is not fully correct
+  const targetSlot = slots.find((slot) => {
     const slotIndex = parseInt(slot.dataset.slotIndex);
     const cells = Array.from(slot.querySelectorAll(".mini-cell"));
-    cells.forEach((cell, localIndex) => {
+
+    // Check if ANY cell in this slot is empty or incorrect
+    return cells.some((cell, localIndex) => {
       const row = Math.floor(slotIndex / 3) * 3 + Math.floor(localIndex / 3);
       const col = (slotIndex % 3) * 3 + (localIndex % 3);
-      allCells.push({ element: cell, row, col });
+      const val = cell.textContent.trim();
+
+      const isIncorrect =
+        cell.classList.contains("user-filled") &&
+        parseInt(val) !== solution[row][col];
+      const isEmpty = val === "" || cell.classList.contains("has-notes");
+
+      return isEmpty || isIncorrect;
     });
   });
 
-  // 2. Sort by reading order (row then col)
-  allCells.sort((a, b) => a.row - b.row || a.col - b.col);
+  if (targetSlot) {
+    const slotIndex = parseInt(targetSlot.dataset.slotIndex);
+    const cells = Array.from(targetSlot.querySelectorAll(".mini-cell"));
 
-  // 3. Find the FIRST empty or incorrect cell
-  const target = allCells.find((cell) => {
-    const val = cell.element.textContent.trim();
-    const isIncorrect =
-      cell.element.classList.contains("user-filled") &&
-      parseInt(val) !== solution[cell.row][cell.col];
-    const isEmpty = val === "" || cell.element.classList.contains("has-notes");
-    return isEmpty || isIncorrect;
-  });
+    // Fill the ENTIRE block
+    cells.forEach((cell, localIndex) => {
+      const row = Math.floor(slotIndex / 3) * 3 + Math.floor(localIndex / 3);
+      const col = (slotIndex % 3) * 3 + (localIndex % 3);
+      const correctVal = solution[row][col];
 
-  if (target) {
-    const correctVal = solution[target.row][target.col];
-    target.element.textContent = correctVal;
-    target.element.classList.add("user-filled");
-    target.element.classList.remove("has-notes", "error");
+      // Only update if not already correct (avoid unnecessary DOM writes)
+      const currentVal = cell.textContent.trim();
+      if (currentVal != correctVal) {
+        cell.textContent = correctVal;
+        cell.classList.add("user-filled");
+        cell.classList.remove("has-notes", "error");
 
-    // Clean up notes grid if any
-    const notesGrid = target.element.querySelector(".notes-grid");
-    if (notesGrid) notesGrid.remove();
+        // Clean up notes grid if any
+        const notesGrid = cell.querySelector(".notes-grid");
+        if (notesGrid) notesGrid.remove();
+      }
+    });
 
-    // Trigger validation (only triggers win if this was the last cell)
+    // Trigger validation to check for global win
     validateBoard();
   }
 }

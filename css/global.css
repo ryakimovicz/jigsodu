@@ -107,7 +107,7 @@ button {
 .debug-btn {
   display: none; /* Hidden by default */
   position: fixed;
-  bottom: 20px;
+  bottom: 30px; /* Fine-tuned adjustment */
   right: 20px;
   background-color: var(--accent-color, #007bff);
   color: white;

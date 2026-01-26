@@ -40,7 +40,9 @@ export const translations = {
             la <strong>Sopa de Números</strong> final.`,
     menu_tagline: "Tu dosis diaria de números te está esperando",
     btn_start: "EMPEZAR",
+    btn_start: "EMPEZAR",
     btn_coming_soon: "PRÓXIMAMENTE",
+    btn_solve: "Resolver",
 
     // Profile Dropdown
     profile_header: "Mí perfil",
@@ -125,7 +127,9 @@ export const translations = {
             the final <strong>Number Search</strong>.`,
     menu_tagline: "Your daily dose of numbers is waiting for you",
     btn_start: "START",
+    btn_start: "START",
     btn_coming_soon: "COMING SOON",
+    btn_solve: "Solve",
 
     // Profile Dropdown
     profile_header: "My Profile",

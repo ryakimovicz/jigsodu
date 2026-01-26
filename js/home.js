@@ -5,6 +5,10 @@ import { getCurrentLang } from "./i18n.js";
 export function initHome() {
   console.log("Jigsudo Home Module Loaded");
 
+  // Hide Solve button on Home
+  const solveBtn = document.getElementById("debug-help-btn");
+  if (solveBtn) solveBtn.style.display = "none";
+
   // ... (existing constants) ...
 
   // Sidebar elements removed

@@ -34,7 +34,9 @@ let timerInterval;
 export function initMemoryGame() {
   console.log("Initializing Memory Game...");
 
-  // 1. Get Elements
+  // Show Solve button (restore CSS control)
+  const solveBtn = document.getElementById("debug-help-btn");
+  if (solveBtn) solveBtn.style.display = ""; // Let CSS (debug-mode) handle it
   memorySection = document.getElementById("memory-game");
   boardContainer = document.getElementById("memory-board");
   cardsContainer = document.getElementById("memory-cards");
