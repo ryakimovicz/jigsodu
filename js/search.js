@@ -57,7 +57,18 @@ function renderTargets(data) {
   const list = document.createElement("div");
   list.className = "search-targets-list";
 
-  data.targets.forEach((target) => {
+  // Shuffle targets for display (Fisher-Yates)
+  // We create a copy to not affect the actual data state
+  const displayTargets = [...data.targets];
+  for (let i = displayTargets.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [displayTargets[i], displayTargets[j]] = [
+      displayTargets[j],
+      displayTargets[i],
+    ];
+  }
+
+  displayTargets.forEach((target) => {
     const chip = document.createElement("div");
     chip.className = "search-target-chip";
     chip.dataset.id = target.id;
