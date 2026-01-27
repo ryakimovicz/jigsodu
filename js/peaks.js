@@ -106,6 +106,10 @@ export function transitionToPeaks() {
 
 function prepareGameLogic() {
   const state = gameManager.getState();
+<<<<<<< HEAD
+=======
+
+>>>>>>> search
   // FIXED: Use symmetric solution (TB, LR, etc.) instead of raw solution
   solvedBoard = gameManager.getTargetSolution();
   targetMap = new Map();
