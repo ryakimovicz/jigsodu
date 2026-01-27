@@ -156,15 +156,25 @@ async function generateDailyPuzzle() {
     // Easier: Pick 3 cells. Calculate variations. IF any reserved cell becomes a peak/valley in any variation, RETRY picking reserved cells.
     // This ensures consistency.
 
-    let variations = {};
-    let simonValues = [];
-    let simonCoordsBase = [];
-    let validVariationsFound = false;
-    let variationAttempts = 0;
+    // 4. PREPARE SYMMETRIC VARIATIONS & GENERATE SEARCH
+    // Retry loop: If Search fails to cover the board (leaving only simon cells),
+    // pick new Simon Cells and retry. Ideally, different reserved cells enable better coverage.
 
-    while (!validVariationsFound && variationAttempts < 100) {
-      variationAttempts++;
-      variations = {
+    let attemptsSearch = 0;
+    const MAX_SEARCH_ATTEMPTS = 50;
+    let success = false;
+
+    let finalVariations = {};
+    let finalSimonValues = [];
+    let finalSearchTargets = {};
+
+    while (!success && attemptsSearch < MAX_SEARCH_ATTEMPTS) {
+      attemptsSearch++;
+      process.stdout.write(
+        `   > Attempt ${attemptsSearch}/${MAX_SEARCH_ATTEMPTS}: Picking Simon Cells... `,
+      );
+
+      let variations = {
         0: { board: JSON.parse(JSON.stringify(gameData.solution)) },
         LR: { board: swapStacks(gameData.solution) },
         TB: { board: swapBands(gameData.solution) },
@@ -172,8 +182,7 @@ async function generateDailyPuzzle() {
       };
 
       // 4a. Pick 3 Random Cells
-      // Just pick random r,c. Check constraints later.
-      simonCoordsBase = [];
+      let simonCoordsBase = [];
       const usedIndices = new Set();
       while (simonCoordsBase.length < 3) {
         const r = Math.floor(Math.random() * 9);
@@ -185,79 +194,95 @@ async function generateDailyPuzzle() {
         }
       }
 
-      simonValues = simonCoordsBase.map((p) => gameData.solution[p.r][p.c]);
-
-      // 4b. Validate against all variations
+      // 4b. Validate against all variations (Must not be Peak/Valley)
       let clean = true;
       for (const [key, varData] of Object.entries(variations)) {
-        // Map Coords
         varData.simonCoords = mapCoordinates(simonCoordsBase, key);
-        // Calculate Peaks/Valleys
         const { targetMap } = getAllTargets(varData.board);
-        varData.peaksValleys = targetMap; // We likely don't need the full map, just check function
+        varData.peaksValleys = targetMap;
 
-        // Check if reserved cells land on a Peak/Valley
         for (const coord of varData.simonCoords) {
-          // We can check local neighbors for P/V status
-          // Or rely on search generator to respect reserved
-          // But search gen assumes Reserved are NOT P/V.
-          // If a reserved cell IS a P/V, we have a conflict (P/V must be distinct).
-          // Actually Search Gen says: "Available = NOT P/V AND NOT Reserved".
-          // So if a Reserved cell IS a P/V, it's fine, it just is excluded twice.
-          // BUT user wants "Unused numbers" -> "Neither Peak, Valley nor Path".
-          // If a reserved cell turns out to be a Peak, then it's used as a Peak.
-          // So it CANNOT be a reserved "Simon" number (which implies 'Empty' at end of Search stage).
-          // So yes: Reserved cells MUST NOT BE Peak/Valley in their current board state.
-
-          // Simple check: Is it P/V?
-          // Since we don't expose isPeakOrValley from here easily, we use the fact that getAllTargets returns all P/V.
-          // targetMap is Map<"r,c", type>
           if (targetMap.has(`${coord.r},${coord.c}`)) {
             clean = false;
-            break;
+            break; // Failed this attempt
           }
         }
         if (!clean) break;
       }
 
-      if (clean) validVariationsFound = true;
-    }
-
-    if (!validVariationsFound) {
-      throw new Error(
-        "Could not find valid Simon Cells distinct from Peaks/Valleys in all variations.",
-      );
-    }
-
-    console.log(`   > Reserved Simon Values: ${simonValues.join(", ")}`);
-
-    // 5. Generate Search Sequences for each Variation
-    const allSearchTargets = {};
-
-    for (const [key, varData] of Object.entries(variations)) {
-      console.log(`     -> Generating sequences for Variation [${key}]...`);
-      const result = generateSearchSequences(
-        varData.board,
-        seedInt + key.length, // Slight seed variance? No, preserve determinism best we can. Use same seed?
-        // If we use same seed, RNG is same, but board is different. That is good.
-        seedInt,
-        60000,
-        varData.simonCoords, // Pass Reserved Cells
-      );
-
-      if (!result || result.length === 0) {
-        throw new Error(`Failed sequence generation for var ${key}`);
+      if (!clean) {
+        process.stdout.write("Conflict with P/V. Retrying.\r");
+        continue; // Try next attempt
       }
-      allSearchTargets[key] = {
-        targets: result,
-        simon: varData.simonCoords, // Save coords for client convenience
-      };
+
+      // 4c. Generate Search Sequences for ALL variations
+      let allVariationsValid = true;
+      let tempSearchTargets = {};
+
+      for (const [key, varData] of Object.entries(variations)) {
+        let bestResult = null;
+        let varSuccess = false;
+
+        // LOCAL RETRY: Try up to 5 times to solve THIS variation with CURRENT Simon cells
+        // BEFORE giving up and rotating Simon cells.
+        for (let i = 0; i < 5; i++) {
+          const seedVariance = attemptsSearch * 100 + i; // Unique seed per local attempt
+
+          const result = generateSearchSequences(
+            varData.board,
+            seedInt + seedVariance,
+            60000,
+            varData.simonCoords,
+          );
+
+          // Strict Check: Must have <= 3 holes (the Simon cells themselves)
+          // Note: result.holes usually includes the simon cells if they are not filled by paths.
+          // If result.holes count includes simon, we want == 3. If excludes, == 0.
+          // Assuming result.holes counts ALL unused cells:
+          if (result && result.holes <= 3) {
+            bestResult = result;
+            varSuccess = true;
+            break; // Found valid path for this variation!
+          }
+        }
+
+        if (!varSuccess) {
+          process.stdout.write(
+            ` -> Failed Var [${key}] after 5 attempts. Retrying Set.\r`,
+          );
+          allVariationsValid = false;
+          break; // Break variation loop, triggers outer retry
+        }
+
+        tempSearchTargets[key] = bestResult.sequences;
+      }
+
+      if (allVariationsValid) {
+        console.log(
+          `\n     ✅ Success! All variations cover full board (except 3 reserved).`,
+        );
+        finalVariations = variations;
+        finalSimonValues = simonCoordsBase.map(
+          (p) => gameData.solution[p.r][p.c],
+        );
+        finalSearchTargets = tempSearchTargets;
+        success = true;
+      }
     }
+
+    if (!success) {
+      throw new Error(
+        `CRITICAL: Could not find valid puzzle layout after ${MAX_SEARCH_ATTEMPTS} attempts.`,
+      );
+    }
+
+    console.log(`   > Reserved Simon Values: ${finalSimonValues.join(", ")}`);
+    const allSearchTargets = finalSearchTargets; // Alias for saving
 
     // 5. Construct Final JSON Overlay
     const dailyPuzzle = {
       meta: {
-        version: "2.0", // Bump version
+        version: "2.1", // Bump version for strict mode
         date: dateStr,
         seed: seedInt,
         generatedAt: new Date().toISOString(),
@@ -265,9 +290,10 @@ async function generateDailyPuzzle() {
       data: {
         solution: gameData.solution, // Original Board
         puzzle: gameData.puzzle,
-        simonValues: simonValues, // The logical numbers
+        simonValues: finalSimonValues, // The logical numbers (from the successful attempt)
         searchTargets: allSearchTargets, // Map { "0": {...}, "LR": {...} ... }
       },
+      chunks: gameData.chunks, // Add chunks explicitly if needed by earlier logic, though usually part of dailyGame
     };
 
     // Helper Functions for Transposition
