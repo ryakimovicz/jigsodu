@@ -213,7 +213,7 @@ async function generateDailyPuzzle() {
           baseValid = true;
         }
         // Near-Perfect? Try to clean
-        else if (resultBase.holes <= 15) {
+        else if (resultBase.holes <= 35) {
           absorbOrphans(
             resultBase.sequences,
             variations["0"].board,
@@ -350,8 +350,8 @@ async function generateDailyPuzzle() {
         if (!result) continue;
 
         // B. ORPHAN ABSORPTION STRATEGY
-        // If result is "good enough" (holes <= 15), try to fix it.
-        if (result.holes <= 15) {
+        // If result is "good enough" (holes <= 35), try to fix it.
+        if (result.holes <= 35) {
           // Attempt to merge orphans
           absorbOrphans(result.sequences, grid, reserved, peaksValleysMap);
 
