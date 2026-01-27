@@ -958,68 +958,91 @@ export function checkBoardCompletion() {
 
   if (reconstructionFailed) return;
 
-  // 3. Validate
-  const conflicts = getConflicts(currentBoard);
+  // 3. Validate against 4 Symmetric Permutations
+  // We check which permutation the user is building.
+  const currentChunks = [];
+  slots.forEach((slot, i) => {
+    const content = slot.querySelector(".mini-sudoku-grid");
+    if (content) {
+      currentChunks[i] = parseInt(content.dataset.chunkIndex);
+    } else {
+      currentChunks[i] = -1; // Should not happen given reconstruction check
+    }
+  });
 
-  if (conflicts.size > 0) {
-    console.log("Board Complete but Conflicts found:", conflicts);
+  // Define Valid Targets (Indices 0..8)
+  const targets = {
+    0: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+    LR: [2, 1, 0, 5, 4, 3, 8, 7, 6],
+    TB: [6, 7, 8, 3, 4, 5, 0, 1, 2],
+    HV: [8, 7, 6, 5, 4, 3, 2, 1, 0],
+  };
 
-    // TRIGGER ERROR
+  let bestMatchKey = null;
+  let maxMatches = -1;
+  let matchesFound = 0;
+
+  // Find Closest Target
+  for (const [key, target] of Object.entries(targets)) {
+    let matches = 0;
+    for (let i = 0; i < 9; i++) {
+      if (currentChunks[i] === target[i]) matches++;
+    }
+    if (matches === 9) {
+      bestMatchKey = key;
+      matchesFound = 9;
+      break; // Perfect match
+    }
+    if (matches > maxMatches) {
+      maxMatches = matches;
+      bestMatchKey = key;
+    }
+  }
+
+  if (matchesFound === 9) {
+    console.log(`Jigsaw Solved! Detected Variation: [${bestMatchKey}]`);
+
+    // Save Variation to Game Manager
+    gameManager.updateProgress("jigsawVariation", bestMatchKey);
+
+    // Clean errors and Add Victory Animation
+    clearBoardErrors();
     if (boardContainer) {
-      boardContainer.classList.remove("board-error");
-      void boardContainer.offsetWidth; // Trigger reflow
-      boardContainer.classList.add("board-error");
+      boardContainer.classList.add("board-complete");
+    } else {
+      document.querySelector(".memory-board")?.classList.add("board-complete");
     }
 
-    // Highlight specific errors
-    // Conflict format: "row,col"
-    conflicts.forEach((coord) => {
-      const [r, c] = coord.split(",").map(Number);
-
-      // Find which slot this cell belongs to
-      const slotRow = Math.floor(r / 3);
-      const slotCol = Math.floor(c / 3);
-      const slotIndex = slotRow * 3 + slotCol;
-
-      const slot = document.querySelector(
-        `.sudoku-chunk-slot[data-slot-index="${slotIndex}"]`,
-      );
-      if (slot) {
-        // Find the specific mini-cell
-        // Local row/col within the chunk
-        const localR = r % 3;
-        const localC = c % 3;
-        // The mini-grid cells are flat list in order? The createMiniGrid creates nested?
-        // Let's check createMiniGrid: it checks gridData.forEach ...
-        // It appends cells linearly. So index = localR * 3 + localC
-        const cells = slot.querySelectorAll(".mini-cell");
-        const cellIdx = localR * 3 + localC;
-        if (cells[cellIdx]) {
-          cells[cellIdx].classList.add("error-number");
-        }
-      }
-    });
-
-    // 4. Errors persist until user interaction (timeout removed)
-    return; // Stop here
+    // Delay advance
+    setTimeout(() => {
+      transitionToSudoku();
+    }, 600);
+    return;
   }
 
-  // 4. Success!
-  console.log("Jigsaw Solved Correctly!");
+  // If we are here, it's invalid.
+  // Highlight errors against the "Closest" Intent (bestMatchKey)
+  console.log(
+    `Board Complete but Invalid. Closest Variation: ${bestMatchKey} (${maxMatches}/9)`,
+  );
 
-  // Clean errors and Add Victory Animation
-  clearBoardErrors();
+  const target = targets[bestMatchKey];
+  slots.forEach((slot, i) => {
+    if (i === 4) return; // Skip center
+
+    const chunksVal = currentChunks[i];
+    if (chunksVal !== target[i]) {
+      // This slot is wrong for the intended variation
+      const cells = slot.querySelectorAll(".mini-cell");
+      cells.forEach((c) => c.classList.add("error-number"));
+    }
+  });
+
   if (boardContainer) {
-    boardContainer.classList.add("board-complete");
-  } else {
-    // Fallback if variable lost reference (shouldn't happen but safe)
-    document.querySelector(".memory-board")?.classList.add("board-complete");
+    boardContainer.classList.remove("board-error");
+    void boardContainer.offsetWidth;
+    boardContainer.classList.add("board-error");
   }
-
-  // Delay advance to show animation
-  setTimeout(() => {
-    transitionToSudoku();
-  }, 600);
 }
 
 function clearBoardErrors() {

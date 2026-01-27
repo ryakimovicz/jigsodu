@@ -109,6 +109,8 @@ export class GameManager {
         solution: data.solution,
         initialPuzzle: data.puzzle,
         chunks: data.chunks, // Provided by JSON
+        searchTargetsMap: data.searchTargets, // Store the full map { "0": ..., "LR": ... }
+        simonValues: data.simonValues || [],
       },
       memory: {
         pairsFound: 0,
@@ -116,22 +118,67 @@ export class GameManager {
       },
       jigsaw: {
         placedChunks: [],
+        variation: null, // "0", "LR", "TB", "HV"
       },
       sudoku: {
         currentBoard: data.puzzle, // Start with holes
       },
       search: {
-        // Static JSON likely contains searchTargets
-        targets: data.searchTargets || [],
+        targets: [], // Will be populated by setJigsawVariation
         found: [],
         version: 14,
       },
+      simon: {
+        values: data.simonValues || [],
+        coordinates: [], // Will be populated by setJigsawVariation
+      },
     };
+  }
+
+  setJigsawVariation(variationKey) {
+    if (!this.state) return;
+
+    console.log(`[GameManager] Setting Jigsaw Variation: ${variationKey}`);
+    this.state.jigsaw.variation = variationKey;
+
+    // Load Variation Data
+    // Handle Backward Compat (if map is missing, fallback to empty or array check)
+    const map = this.state.data.searchTargetsMap;
+    let variationData = null;
+
+    if (map && !Array.isArray(map)) {
+      // New V2 Format
+      variationData = map[variationKey];
+    } else if (Array.isArray(map)) {
+      // Old V1 Format (Direct Array)
+      variationData = { targets: map, simon: [] };
+    }
+
+    if (variationData) {
+      if (CONFIG.debugMode)
+        console.log(
+          `[GameManager] Loaded Search/Simon data for ${variationKey}`,
+        );
+      this.state.search.targets = variationData.targets;
+      this.state.simon.coordinates = variationData.simon || [];
+    } else {
+      console.error(
+        `[GameManager] Critical: No data found for variation ${variationKey}`,
+      );
+      // Fallback to "0" or empty?
+      this.state.search.targets = [];
+      this.state.simon.coordinates = [];
+    }
+
+    this.save();
   }
 
   createNewState() {
     // Generate the Sudoku data
     const gameData = generateDailyGame(this.currentSeed);
+    // Note: Local generation does not support V2 Symmetric logic yet.
+    // Ideally we should update generateDailyGame/Factory too, but strictly "Static First" now.
+    // If fallback is disabled, this might never be called in prod.
 
     return {
       meta: {
@@ -147,6 +194,8 @@ export class GameManager {
         solution: gameData.solution,
         initialPuzzle: gameData.puzzle, // The one with holes
         chunks: gameData.chunks, // The 9 solved 3x3 grids (prizes)
+        searchTargetsMap: [], // Local gen support pending
+        simonValues: [],
       },
       memory: {
         pairsFound: 0,
@@ -155,6 +204,7 @@ export class GameManager {
       },
       jigsaw: {
         placedChunks: [], // indices of placed chunks (0-8)
+        variation: "0",
       },
       sudoku: {
         currentBoard: gameData.puzzle, // Will be modified by user
@@ -164,6 +214,10 @@ export class GameManager {
         targets: [],
         found: [],
         version: 14, // Increment this to invalidate caches
+      },
+      simon: {
+        values: [],
+        coordinates: [],
       },
     };
   }

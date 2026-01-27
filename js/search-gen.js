@@ -23,41 +23,56 @@ class SeededRNG {
   }
 }
 
-export function generateSearchSequences(board, dateSeed, maxDuration = 4000) {
+export function generateSearchSequences(
+  board,
+  dateSeed,
+  maxDuration = 4000,
+  reservedCells = [],
+) {
   const rng = new SeededRNG(dateSeed);
   const rows = 9;
   const cols = 9;
   const usedMap = new Set(); // "r,c" of cells used in sequences
   const sequences = [];
 
-  // 1. Identify Available Cells (NOT Peak AND NOT Valley)
+  // 1. Identify Available Cells (NOT Peak AND NOT Valley AND NOT Reserved)
   const availableCells = [];
   const peaksValleys = new Set();
+
+  // Mark reserved as "unavailable" (same as peaks/valleys logic)
+  if (reservedCells && reservedCells.length > 0) {
+    reservedCells.forEach((rc) => peaksValleys.add(`${rc.r},${rc.c}`));
+  }
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if (isPeakOrValley(r, c, board)) {
         peaksValleys.add(`${r},${c}`);
-      } else {
+      } else if (!peaksValleys.has(`${r},${c}`)) {
         availableCells.push({ r, c });
       }
     }
   }
 
-  // 2. Target Used Cells = Total Available - 3
-  // We want exactly 3 cells left unused (neither peak/valley nor sequence)
+  // 2. Target Used Count
+  // If reservedCells are provided, we assume those ARE the "3 unused", so we try to fill everything else.
+  // Otherwise, we leave 3 unused dynamically.
   const totalAvailable = availableCells.length;
-  const targetUsedCount = Math.max(0, totalAvailable - 3);
+  let targetUsedCount;
+
+  if (reservedCells && reservedCells.length >= 3) {
+    targetUsedCount = totalAvailable; // Try to use ALL remaining
+  } else {
+    targetUsedCount = Math.max(0, totalAvailable - 3);
+  }
 
   if (CONFIG.debugMode) {
     console.log(
-      `Generating Search: Available ${totalAvailable}, Target Used ${targetUsedCount}`,
+      `Generating Search: Available ${totalAvailable}, Target Used ${targetUsedCount} (Reserved: ${reservedCells.length})`,
     );
   }
 
   // 3. Retry Loop Strategy
-  // If we get a valid count (3 free) but they are CLUSTERED, we reject and retry.
-  // We perturb the RNG or heuristics slightly each time.
   const maxRetries = 20;
   let bestGlobalResult = null;
   let minAdjacency = 999;
