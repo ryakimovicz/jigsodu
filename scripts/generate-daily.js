@@ -337,7 +337,7 @@ function generateSmartGreedyCoverage(grid, pvMap, rnd) {
     if (candidates.length === 0) break;
 
     // Pick random from best candidates
-    let start = candidates[Math.floor(Math.random() * candidates.length)];
+    let start = candidates[Math.floor(rnd() * candidates.length)];
     let currentPath = [start];
     visited[start.r][start.c] = true;
     unvisitedCount--;
