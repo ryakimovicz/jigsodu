@@ -20,7 +20,7 @@ let uniquenessCache = new Map();
 
 async function generateDailyPuzzle() {
   console.log(
-    "🧩 Starting Daily Puzzle Generation (Survivor Greedy + Anti-Ambiguity)...",
+    "🧩 Starting Daily Puzzle Generation (Survivor Greedy + Cleanup)...",
   );
 
   let seed = process.argv[2];
@@ -98,36 +98,47 @@ async function generateDailyPuzzle() {
         const { targetMap } = getAllTargets(variations[key].board);
         variations[key].peaksValleys = targetMap;
 
-        // B. Generar Cobertura "Survivor Greedy" (Prioriza salvar celdas aisladas)
+        // B. Generar Cobertura "Survivor Greedy"
         const rawPaths = generateSurvivorGreedyCoverage(
           variations[key].board,
           variations[key].peaksValleys,
           nextRnd,
         );
 
-        // C. Segmentation Inteligente (Backtracking + Unicidad)
-        const { snakes, orphans } = segmentPathsSmart(
+        // C. Segmentation Inteligente
+        let { snakes, orphans } = segmentPathsSmart(
           rawPaths,
           variations[key].board,
           variations[key].peaksValleys,
         );
-        variations[key].snakes = snakes;
 
-        // Islas Totales
+        // Islas naturales (aisladas por paredes)
         let naturalIslands = getIslands(rawPaths, variations[key].peaksValleys);
         let totalIslands = [...naturalIslands, ...orphans];
 
-        // Deduplicar
+        // Deduplicar islas
         let uniqueIslandCoords = new Set();
-        let finalIslands = [];
+        let pendingIslands = [];
         totalIslands.forEach((isl) => {
           let k = `${isl.r},${isl.c}`;
           if (!uniqueIslandCoords.has(k)) {
             uniqueIslandCoords.add(k);
-            finalIslands.push(isl);
+            pendingIslands.push(isl);
           }
         });
 
+        // D. CLEANUP PHASE (El cambio clave)
+        // Intentar pegar las islas a las víboras existentes
+        const cleanupResult = cleanupIslands(
+          pendingIslands,
+          snakes,
+          variations[key].board,
+          variations[key].peaksValleys,
+        );
+        
+        variations[key].snakes = cleanupResult.snakes;
+        let finalIslands = cleanupResult.islands;
+        
         variations[key].islands = finalIslands;
 
         // REGLA: Máximo 3 celdas libres
@@ -175,7 +186,7 @@ async function generateDailyPuzzle() {
 
       // --- CHEQUEO: VALORES FORZADOS COMPATIBLES ---
       if (globalForcedValues.size > 3) {
-        continue; // Más de 3 números distintos obligatorios
+        continue;
       }
 
       let forcedCompatible = true;
@@ -196,10 +207,8 @@ async function generateDailyPuzzle() {
         commonValues = commonValues.filter((val) => allCandidates[i].has(val));
       }
 
-      // Construir Objetivos Finales
       let targets = Array.from(globalForcedValues);
       let slotsNeeded = 3 - targets.length;
-
       let potentialFillers = commonValues.filter(
         (v) => !globalForcedValues.has(v),
       );
@@ -262,7 +271,7 @@ async function generateDailyPuzzle() {
 
     // --- SAVE ---
     const dailyPuzzle = {
-      meta: { version: "5.2-survivor-greedy", date: dateStr, seed: seedInt },
+      meta: { version: "5.3-cleanup-phase", date: dateStr, seed: seedInt },
       data: {
         solution: finalGameData.solution,
         puzzle: finalGameData.puzzle,
@@ -285,12 +294,66 @@ async function generateDailyPuzzle() {
 }
 
 // ==========================================
-// 🧠 LOGIC: SURVIVOR GREEDY COVERAGE (SALVA-VECINOS)
+// 🧹 LOGIC: CLEANUP ISLANDS (MERGE ORPHANS)
+// ==========================================
+function cleanupIslands(islands, snakes, grid, pvMap) {
+    let currentIslands = [...islands];
+    let currentSnakes = [...snakes];
+    let changed = true;
+
+    // Repeat until no more merges can be made
+    while (changed) {
+        changed = false;
+        let nextIslands = [];
+
+        for (let island of currentIslands) {
+            let merged = false;
+
+            // Try to merge this island into ANY existing snake
+            for (let i = 0; i < currentSnakes.length; i++) {
+                let snake = currentSnakes[i];
+                if (snake.length >= 9) continue; // Snake too long (max 9 usually)
+
+                // Try Head
+                if (dist(snake[0], island) === 1) {
+                    let newSnake = [island, ...snake];
+                    const seqValues = newSnake.map(p => grid[p.r][p.c]);
+                    if (countOccurrences(grid, pvMap, seqValues) === 1) {
+                        currentSnakes[i] = newSnake;
+                        merged = true;
+                        changed = true;
+                        break;
+                    }
+                }
+
+                // Try Tail
+                if (dist(snake[snake.length - 1], island) === 1) {
+                    let newSnake = [...snake, island];
+                    const seqValues = newSnake.map(p => grid[p.r][p.c]);
+                    if (countOccurrences(grid, pvMap, seqValues) === 1) {
+                        currentSnakes[i] = newSnake;
+                        merged = true;
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!merged) {
+                nextIslands.push(island);
+            }
+        }
+        currentIslands = nextIslands;
+    }
+
+    return { islands: currentIslands, snakes: currentSnakes };
+}
+
+// ==========================================
+// 🧠 LOGIC: SURVIVOR GREEDY COVERAGE
 // ==========================================
 function generateSurvivorGreedyCoverage(grid, pvMap, rnd) {
-  let visited = Array(9)
-    .fill()
-    .map(() => Array(9).fill(false));
+  let visited = Array(9).fill().map(() => Array(9).fill(false));
   let unvisitedCount = 81 - pvMap.size;
 
   pvMap.forEach((_, key) => {
@@ -302,21 +365,14 @@ function generateSurvivorGreedyCoverage(grid, pvMap, rnd) {
 
   const countOpenNeighbors = (r, c) => {
     let count = 0;
-    [
-      [0, 1],
-      [0, -1],
-      [1, 0],
-      [-1, 0],
-    ].forEach((d) => {
-      const nr = r + d[0],
-        nc = c + d[1];
+    [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach((d) => {
+      const nr = r + d[0], nc = c + d[1];
       if (nr >= 0 && nr < 9 && nc >= 0 && nc < 9 && !visited[nr][nc]) count++;
     });
     return count;
   };
 
   while (unvisitedCount > 0) {
-    // 1. SELECT START (Priority: Lowest Degree, then Top-Left)
     let start = null;
     let minDegree = 9;
 
@@ -343,26 +399,14 @@ function generateSurvivorGreedyCoverage(grid, pvMap, rnd) {
     let curr = start;
     let stuck = false;
 
-    // 2. MOVE (SURVIVOR LOGIC)
     while (!stuck) {
       let moves = [];
-      let criticalMoves = []; // Moves required to save an isolated neighbor
+      let criticalMoves = []; 
 
-      [
-        [0, 1],
-        [0, -1],
-        [1, 0],
-        [-1, 0],
-      ].forEach((d) => {
-        const nr = curr.r + d[0],
-          nc = curr.c + d[1];
+      [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach((d) => {
+        const nr = curr.r + d[0], nc = curr.c + d[1];
         if (nr >= 0 && nr < 9 && nc >= 0 && nc < 9 && !visited[nr][nc]) {
-          const degree = countOpenNeighbors(nr, nc); // Degree excludes 'curr' since 'curr' is visited?
-          // Wait, 'curr' IS visited now. So 'countOpenNeighbors(nr, nc)' correctly sees 'curr' as blocked.
-          // If a neighbor has degree 0, it means 'curr' is its LAST hope (or it's already isolated).
-          // Actually, if it has degree 0, it has NO unvisited neighbors.
-          // So if we don't pick it NOW, it becomes an island.
-
+          const degree = countOpenNeighbors(nr, nc); 
           if (degree === 0) {
             criticalMoves.push({ r: nr, c: nc, degree });
           }
@@ -375,20 +419,14 @@ function generateSurvivorGreedyCoverage(grid, pvMap, rnd) {
         break;
       }
 
-      // DECISION TIME
       let nextNode;
       if (criticalMoves.length > 0) {
-        // MUST pick a critical move to prevent an island
-        // If multiple criticals exist, we can only save one :( (Islands inevitable)
-        // Pick the first one.
-        nextNode = criticalMoves[0];
+          nextNode = criticalMoves[0];
       } else {
-        // No immediate danger. Use Warnsdorff (pick neighbor with lowest degree)
-        // to push path towards edges/corners.
-        moves.sort((a, b) => {
-          return a.degree - b.degree || rnd() - 0.5;
-        });
-        nextNode = moves[0];
+          moves.sort((a, b) => {
+            return a.degree - b.degree || rnd() - 0.5;
+          });
+          nextNode = moves[0];
       }
 
       visited[nextNode.r][nextNode.c] = true;
@@ -402,7 +440,7 @@ function generateSurvivorGreedyCoverage(grid, pvMap, rnd) {
 }
 
 // ==========================================
-// 🪚 LOGIC: SMART SEGMENTATION (BACKTRACKING + STRICT UNIQUENESS)
+// 🪚 LOGIC: SMART SEGMENTATION
 // ==========================================
 function segmentPathsSmart(rawPaths, grid, pvMap) {
   let finalSnakes = [];
@@ -474,17 +512,6 @@ function segmentPathsSmart(rawPaths, grid, pvMap) {
   return { snakes: finalSnakes, orphans };
 }
 
-function identifyUniqueSnakes(snakes, grid, pvMap) {
-  let uniqueOnes = [];
-  for (let snake of snakes) {
-    const seqValues = snake.map((p) => grid[p.r][p.c]);
-    if (countOccurrences(grid, pvMap, seqValues) === 1) {
-      uniqueOnes.push(snake);
-    }
-  }
-  return uniqueOnes;
-}
-
 function countOccurrences(grid, pvMap, targetSeq) {
   let count = 0;
   const startVal = targetSeq[0];
@@ -492,15 +519,7 @@ function countOccurrences(grid, pvMap, targetSeq) {
     for (let c = 0; c < 9; c++) {
       if (pvMap.has(`${r},${c}`)) continue;
       if (grid[r][c] === startVal) {
-        count += searchPath(
-          grid,
-          pvMap,
-          r,
-          c,
-          targetSeq,
-          1,
-          new Set([`${r},${c}`]),
-        );
+        count += searchPath(grid, pvMap, r, c, targetSeq, 1, new Set([`${r},${c}`]));
         if (count > 1) return count;
       }
     }
@@ -512,36 +531,19 @@ function searchPath(grid, pvMap, r, c, targetSeq, index, visited) {
   if (index >= targetSeq.length) return 1;
   let found = 0;
   const nextVal = targetSeq[index];
-  const dirs = [
-    [0, 1],
-    [0, -1],
-    [1, 0],
-    [-1, 0],
-  ];
+  const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
   for (let d of dirs) {
     const nr = r + d[0];
     const nc = c + d[1];
     const key = `${nr},${nc}`;
     if (
-      nr >= 0 &&
-      nr < 9 &&
-      nc >= 0 &&
-      nc < 9 &&
-      !pvMap.has(key) &&
-      !visited.has(key) &&
+      nr >= 0 && nr < 9 && nc >= 0 && nc < 9 &&
+      !pvMap.has(key) && !visited.has(key) &&
       grid[nr][nc] === nextVal
     ) {
       const newVisited = new Set(visited);
       newVisited.add(key);
-      found += searchPath(
-        grid,
-        pvMap,
-        nr,
-        nc,
-        targetSeq,
-        index + 1,
-        newVisited,
-      );
+      found += searchPath(grid, pvMap, nr, nc, targetSeq, index + 1, newVisited);
       if (found > 1) return found;
     }
   }
@@ -598,6 +600,8 @@ function getIslands(paths, pvMap) {
   }
   return islands;
 }
+
+function dist(a, b) { return Math.abs(a.r - b.r) + Math.abs(a.c - b.c); }
 
 function swapStacks(board) {
   const newBoard = board.map((r) => [...r]);
