@@ -96,11 +96,21 @@ async function generateDailyPuzzle() {
         let islands = getIslands(rawPaths, variations[key].peaksValleys);
 
         // D. Segmentation (Captura orphans)
-        const { snakes, orphans } = segmentPathsSmart(
+        const segRes = segmentPathsSmart(
           rawPaths,
           variations[key].board,
           variations[key].peaksValleys,
         );
+
+        if (!segRes.success) {
+          // Ambiguity found -> Fail this seed
+          if (attemptsGlobal % 10 === 1)
+            process.stdout.write(`Ambiguous segmentation in [${key}]. Next.\r`);
+          validTopology = false;
+          break;
+        }
+
+        const { snakes, orphans } = segRes;
         variations[key].snakes = snakes;
 
         // Add Orphans to Islands
@@ -245,7 +255,7 @@ async function generateDailyPuzzle() {
 
     // --- SAVE ---
     const dailyPuzzle = {
-      meta: { version: "4.8-adjacency", date: dateStr, seed: seedInt },
+      meta: { version: "4.9-strict-unique", date: dateStr, seed: seedInt },
       data: {
         solution: finalGameData.solution,
         puzzle: finalGameData.puzzle,
@@ -394,6 +404,12 @@ function segmentPathsSmart(rawPaths, grid, pvMap) {
       const len = remaining.length;
       if (len <= 6) {
         if (len >= 3) {
+          // Short snake: Must check uniqueness immediately
+          const seqValues = remaining.map((p) => grid[p.r][p.c]);
+          if (countOccurrences(grid, pvMap, seqValues) > 1) {
+            // Ambiguous short snake -> FAIL
+            return { success: false };
+          }
           finalSnakes.push(remaining);
         } else {
           orphans.push(...remaining);
@@ -407,26 +423,23 @@ function segmentPathsSmart(rawPaths, grid, pvMap) {
         if (remSize > 0 && remSize < 3) continue;
         const candidateChunk = remaining.slice(0, cut);
         const seqValues = candidateChunk.map((p) => grid[p.r][p.c]);
+        // Strict Uniqueness Check
         if (countOccurrences(grid, pvMap, seqValues) === 1) {
           bestCut = cut;
           break;
         }
       }
-      // Fallback
+
+      // Fallback: If no unique cut found -> FAIL
       if (bestCut === -1) {
-        let cut = 6;
-        while (cut >= 3) {
-          if (len - cut === 0 || len - cut >= 3) break;
-          cut--;
-        }
-        if (cut < 3) cut = 3;
-        bestCut = cut;
+        return { success: false };
       }
+
       finalSnakes.push(remaining.slice(0, bestCut));
       remaining = remaining.slice(bestCut);
     }
   }
-  return { snakes: finalSnakes, orphans };
+  return { success: true, snakes: finalSnakes, orphans };
 }
 
 function identifyUniqueSnakes(snakes, grid, pvMap) {
