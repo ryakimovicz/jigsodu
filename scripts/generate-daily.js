@@ -193,9 +193,14 @@ async function generateDailyPuzzle() {
         continue;
       }
 
-      let fillers = potentialFillers
-        .sort(() => 0.5 - Math.random())
-        .slice(0, slotsNeeded);
+      let fillers = [...potentialFillers];
+      // Deterministic Shuffle (Prando)
+      for (let i = fillers.length - 1; i > 0; i--) {
+        const j = Math.floor(rnd.next() * (i + 1));
+        [fillers[i], fillers[j]] = [fillers[j], fillers[i]];
+      }
+      fillers = fillers.slice(0, slotsNeeded);
+
       let finalTargets = [...targets, ...fillers];
 
       console.log(
